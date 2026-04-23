@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 export default function DepositDefender() {
-  const STORAGE_KEY = "deposit-defender-v3-fixed";
+  const STORAGE_KEY = "deposit-defender-v4";
 
   const defaultState = {
     tenantName: "",
@@ -150,12 +150,83 @@ export default function DepositDefender() {
   const evidenceLabel = evidenceStrength >= 75 ? "Strong" : evidenceStrength >= 45 ? "Medium" : "Weak";
   const depositRiskPercent = deposit > 0 ? Math.min(100, Math.round((totalClaimed / deposit) * 100)) : 0;
 
+  const daysSinceMoveOut = useMemo(() => {
+    if (!data.moveOutDate) return null;
+    const today = new Date();
+    const move = new Date(data.moveOutDate);
+    const ms = today.setHours(0, 0, 0, 0) - move.setHours(0, 0, 0, 0);
+    return Math.floor(ms / (1000 * 60 * 60 * 24));
+  }, [data.moveOutDate]);
+
+  const overdueStatus = useMemo(() => {
+    if (!data.moveOutDate) {
+      return {
+        label: "No date yet",
+        tone: "neutral",
+        message: "Add your move-out date to track follow-up timing and possible delay risk.",
+      };
+    }
+
+    if (daysSinceMoveOut < 0) {
+      return {
+        label: "Upcoming",
+        tone: "neutral",
+        message: `Move-out is ${Math.abs(daysSinceMoveOut)} day(s) away. Keep collecting evidence before handoff.`,
+      };
+    }
+
+    if (daysSinceMoveOut <= 21) {
+      return {
+        label: "On track",
+        tone: "good",
+        message: `${daysSinceMoveOut} day(s) since move-out. This is the window to monitor updates and keep records clean.`,
+      };
+    }
+
+    if (daysSinceMoveOut <= 30) {
+      return {
+        label: "Follow up now",
+        tone: "warn",
+        message: `${daysSinceMoveOut} day(s) since move-out. If you still have no clear update, a follow-up message is probably due now.`,
+      };
+    }
+
+    return {
+      label: "Potentially overdue",
+      tone: "risk",
+      message: `${daysSinceMoveOut} day(s) since move-out. You may need to send a stronger follow-up and prepare a demand letter.`,
+    };
+  }, [data.moveOutDate, daysSinceMoveOut]);
+
   const disputeChecklist = [
     data.moveOutDate ? "Move-out date added" : "Add your move-out date",
     evidenceCount >= 3 ? "Evidence log is building well" : "Add at least 3 evidence entries",
     commsCount >= 2 ? "Communication history logged" : "Log at least 2 landlord contacts",
     data.issues.some((x) => x.status === "Disputed") ? "Disputed deduction identified" : "Mark any questionable deduction as Disputed",
     data.stateName ? `State entered: ${data.stateName}` : "Add your state for later legal guidance",
+  ];
+
+  const stateGuidance = useMemo(() => {
+    if (!data.stateName) {
+      return [
+        "Add your state so this case can later show state-specific reminders.",
+        "Rules often vary on timing, itemized deductions, and delivery method.",
+        "For now, keep every message, photo, and receipt in one place.",
+      ];
+    }
+
+    return [
+      `State entered: ${data.stateName}. Treat this as an organizational reminder, not legal advice.`,
+      "Check your state's deadline expectations for deposit return and itemized deductions.",
+      "Confirm whether written notice, mailing address, or certified delivery matters in your area.",
+    ];
+  }, [data.stateName]);
+
+  const summaryHighlights = [
+    `Deposit: $${deposit.toLocaleString()}`,
+    `Claimed: $${totalClaimed.toLocaleString()}`,
+    `Estimated return: $${estimatedReturn.toLocaleString()}`,
+    `Evidence score: ${evidenceStrength} (${evidenceLabel})`,
   ];
 
   const downloadJson = () => {
@@ -185,7 +256,7 @@ export default function DepositDefender() {
           .join(NL)
       : "- No disputed deductions entered yet.";
 
-    const evidenceItems = data.evidence
+    const evidenceLines = data.evidence
       .filter((item) => item.fileRef || item.note)
       .slice(0, 5)
       .map((item) => {
@@ -195,8 +266,8 @@ export default function DepositDefender() {
         return `- ${dateText}: ${item.room}${fileText}${noteText}`;
       });
 
-    const evidenceText = evidenceItems.length
-      ? evidenceItems.join(NL)
+    const evidenceText = evidenceLines.length
+      ? evidenceLines.join(NL)
       : "- No evidence items listed yet.";
 
     const parts = [
@@ -261,6 +332,7 @@ export default function DepositDefender() {
       `Claimed deductions tracked: $${totalClaimed.toLocaleString()}`,
       `Estimated return: $${estimatedReturn.toLocaleString()}`,
       `Evidence strength: ${evidenceStrength} (${evidenceLabel})`,
+      `Timing status: ${overdueStatus.label}`,
       "",
       "Disputed / review deductions:",
       ...issueLines,
@@ -436,6 +508,11 @@ export default function DepositDefender() {
       background: "#fff7ed",
       marginTop: "12px",
     },
+    warningCard: {
+      borderRadius: "16px",
+      padding: "14px",
+      marginTop: "12px",
+    },
     mainGrid: {
       display: "grid",
       gridTemplateColumns: "1.2fr 0.78fr",
@@ -597,6 +674,15 @@ export default function DepositDefender() {
     },
   };
 
+  const warningStyle =
+    overdueStatus.tone === "risk"
+      ? { ...styles.warningCard, background: "#fef2f2", color: "#991b1b" }
+      : overdueStatus.tone === "warn"
+      ? { ...styles.warningCard, background: "#fff7ed", color: "#9a3412" }
+      : overdueStatus.tone === "good"
+      ? { ...styles.warningCard, background: "#ecfdf5", color: "#047857" }
+      : { ...styles.warningCard, background: "#eff6ff", color: "#1d4ed8" };
+
   const isMobile = typeof window !== "undefined" && window.innerWidth < 960;
   if (isMobile) {
     styles.heroGrid.gridTemplateColumns = "1fr";
@@ -659,6 +745,13 @@ export default function DepositDefender() {
               <div style={{ marginTop: "10px", fontSize: "12px", color: "#9a3412" }}>
                 Claimed vs deposit risk: {depositRiskPercent}%
               </div>
+            </div>
+            <div style={warningStyle}>
+              <div style={{ fontSize: "12px", fontWeight: 800, opacity: 0.85, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                Timing status
+              </div>
+              <div style={{ marginTop: "6px", fontSize: "22px", fontWeight: 800 }}>{overdueStatus.label}</div>
+              <div style={{ marginTop: "8px", fontSize: "13px", lineHeight: 1.55 }}>{overdueStatus.message}</div>
             </div>
             <div style={styles.toolbar}>
               <button style={styles.btn} onClick={downloadJson}>Export JSON</button>
@@ -835,20 +928,28 @@ export default function DepositDefender() {
             </div>
 
             <div style={{ ...styles.panel, marginTop: "16px" }}>
+              <div style={styles.sideTitle}>State guidance reminder</div>
+              <ul style={styles.list}>
+                {stateGuidance.map((item, idx) => (
+                  <li key={idx}>{item}</li>
+                ))}
+              </ul>
+            </div>
+
+            <div style={{ ...styles.panel, marginTop: "16px" }}>
+              <div style={styles.sideTitle}>Case snapshot</div>
+              <ul style={styles.list}>
+                {summaryHighlights.map((item, idx) => (
+                  <li key={idx}>{item}</li>
+                ))}
+              </ul>
+            </div>
+
+            <div style={{ ...styles.panel, marginTop: "16px" }}>
               <div style={styles.sideTitle}>Simple pricing path</div>
               <div style={styles.box}><strong>Free:</strong> planner, evidence log, and deduction tracker</div>
               <div style={styles.box}><strong>$9 one-time:</strong> PDF export and dispute-ready templates</div>
               <div style={styles.box}><strong>$19 bundle:</strong> move-out pack, roommate split, and budget tools</div>
-            </div>
-
-            <div style={{ ...styles.panel, marginTop: "16px" }}>
-              <div style={styles.sideTitle}>Best next steps</div>
-              <ol style={styles.list}>
-                <li>Keep the free tool simple and fast</li>
-                <li>Publish and test search demand</li>
-                <li>Add PDF export and premium upsell</li>
-                <li>Expand into a full renter toolkit</li>
-              </ol>
             </div>
           </div>
         </div>
