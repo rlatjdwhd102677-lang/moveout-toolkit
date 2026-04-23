@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
-export default function DepositDefender() {
-  const STORAGE_KEY = "deposit-defender-v5";
+export default function App() {
+  const STORAGE_KEY = "deposit-defender-v6";
 
   const defaultState = {
     tenantName: "",
@@ -153,8 +153,10 @@ export default function DepositDefender() {
   const daysSinceMoveOut = useMemo(() => {
     if (!data.moveOutDate) return null;
     const today = new Date();
+    const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
     const move = new Date(data.moveOutDate);
-    const ms = today.setHours(0, 0, 0, 0) - move.setHours(0, 0, 0, 0);
+    const moveOnly = new Date(move.getFullYear(), move.getMonth(), move.getDate());
+    const ms = todayOnly.getTime() - moveOnly.getTime();
     return Math.floor(ms / (1000 * 60 * 60 * 24));
   }, [data.moveOutDate]);
 
@@ -179,7 +181,7 @@ export default function DepositDefender() {
       return {
         label: "On track",
         tone: "good",
-        message: `${daysSinceMoveOut} day(s) since move-out. This is the window to monitor updates and keep records clean.`,
+        message: `${daysSinceMoveOut} day(s) since move-out. This is the normal window to monitor updates and keep records organized.`,
       };
     }
 
@@ -418,77 +420,80 @@ export default function DepositDefender() {
   const styles = {
     page: {
       minHeight: "100vh",
-      background: "#f8fafc",
+      background: "linear-gradient(180deg, #eef4fb 0%, #f7fafc 100%)",
       color: "#0f172a",
       fontFamily: "Inter, Arial, sans-serif",
-      padding: "24px",
+      padding: "28px",
       boxSizing: "border-box",
     },
     shell: {
-      maxWidth: "1240px",
+      maxWidth: "1280px",
       margin: "0 auto",
     },
     heroGrid: {
       display: "grid",
-      gridTemplateColumns: "1.45fr 0.9fr",
-      gap: "16px",
-      marginBottom: "16px",
+      gridTemplateColumns: "1.5fr 0.92fr",
+      gap: "18px",
+      marginBottom: "18px",
     },
     panel: {
-      background: "white",
-      border: "1px solid #e2e8f0",
-      borderRadius: "22px",
-      padding: "16px",
-      boxShadow: "0 1px 2px rgba(15,23,42,0.06)",
+      background: "rgba(255,255,255,0.92)",
+      border: "1px solid #dde6f1",
+      borderRadius: "26px",
+      padding: "18px",
+      boxShadow: "0 14px 36px rgba(15,23,42,0.08)",
+      backdropFilter: "blur(6px)",
     },
     hero: {
-      background: "linear-gradient(135deg, #0f172a, #1e293b)",
+      background: "linear-gradient(135deg, #0f172a 0%, #172554 45%, #1e293b 100%)",
       color: "white",
-      borderRadius: "28px",
-      padding: "24px",
-      boxShadow: "0 10px 25px rgba(15,23,42,0.16)",
+      borderRadius: "30px",
+      padding: "28px",
+      boxShadow: "0 18px 45px rgba(15,23,42,0.22)",
     },
     badge: {
       display: "inline-block",
-      background: "rgba(255,255,255,0.12)",
-      padding: "6px 12px",
+      background: "rgba(255,255,255,0.14)",
+      padding: "7px 12px",
       borderRadius: "999px",
       fontSize: "12px",
-      fontWeight: 700,
-      letterSpacing: "0.06em",
+      fontWeight: 800,
+      letterSpacing: "0.08em",
       textTransform: "uppercase",
-      marginBottom: "12px",
+      marginBottom: "14px",
     },
     h1: {
-      fontSize: "42px",
-      margin: "0 0 10px",
-      lineHeight: 1.08,
+      fontSize: "50px",
+      lineHeight: 1.02,
+      margin: "0 0 12px",
+      letterSpacing: "-0.03em",
     },
     mutedHero: {
-      color: "#d7e0ee",
+      color: "#dbe7ff",
       fontSize: "16px",
-      lineHeight: 1.65,
-      maxWidth: "720px",
-      marginBottom: "14px",
+      lineHeight: 1.75,
+      maxWidth: "760px",
+      marginBottom: "16px",
     },
     chipRow: {
       display: "flex",
       flexWrap: "wrap",
       gap: "8px",
-      marginBottom: "14px",
+      marginBottom: "18px",
     },
     chip: {
       background: "rgba(255,255,255,0.12)",
       borderRadius: "999px",
-      padding: "7px 12px",
+      padding: "8px 12px",
       fontSize: "12px",
-      fontWeight: 600,
+      fontWeight: 700,
+      border: "1px solid rgba(255,255,255,0.08)",
     },
     heroActions: {
       display: "flex",
       flexWrap: "wrap",
-      gap: "8px",
-      marginTop: "12px",
+      gap: "10px",
+      marginTop: "10px",
     },
     quickGrid: {
       display: "grid",
@@ -497,40 +502,47 @@ export default function DepositDefender() {
       marginTop: "12px",
     },
     statBox: {
-      borderRadius: "16px",
-      padding: "14px",
-      background: "#f1f5f9",
+      borderRadius: "18px",
+      padding: "16px",
+      background: "#f3f7fb",
+      border: "1px solid #e5edf6",
     },
     statLabel: {
       fontSize: "12px",
       color: "#64748b",
+      fontWeight: 700,
+      textTransform: "uppercase",
+      letterSpacing: "0.05em",
     },
     statValue: {
-      marginTop: "6px",
-      fontSize: "28px",
+      marginTop: "8px",
+      fontSize: "30px",
       fontWeight: 800,
+      letterSpacing: "-0.02em",
     },
     scoreCard: {
-      borderRadius: "16px",
-      padding: "14px",
+      borderRadius: "18px",
+      padding: "16px",
       background: "#fff7ed",
       marginTop: "12px",
+      border: "1px solid #fed7aa",
     },
     warningCard: {
-      borderRadius: "16px",
-      padding: "14px",
+      borderRadius: "18px",
+      padding: "16px",
       marginTop: "12px",
+      border: "1px solid transparent",
     },
     mainGrid: {
       display: "grid",
-      gridTemplateColumns: "1.2fr 0.78fr",
-      gap: "16px",
+      gridTemplateColumns: "1.2fr 0.8fr",
+      gap: "18px",
     },
     tabRow: {
       display: "flex",
       flexWrap: "wrap",
       gap: "8px",
-      marginBottom: "16px",
+      marginBottom: "18px",
     },
     tabActive: {
       background: "#0f172a",
@@ -538,13 +550,14 @@ export default function DepositDefender() {
       border: "none",
       borderRadius: "999px",
       padding: "10px 16px",
-      fontWeight: 700,
+      fontWeight: 800,
       cursor: "pointer",
+      boxShadow: "0 8px 18px rgba(15,23,42,0.18)",
     },
     tabIdle: {
-      background: "#e2e8f0",
+      background: "#e9eff6",
       color: "#334155",
-      border: "none",
+      border: "1px solid #d8e2ef",
       borderRadius: "999px",
       padding: "10px 16px",
       fontWeight: 700,
@@ -559,113 +572,122 @@ export default function DepositDefender() {
     label: {
       display: "block",
       fontSize: "13px",
-      fontWeight: 700,
-      marginBottom: "6px",
+      fontWeight: 800,
+      marginBottom: "7px",
       color: "#334155",
     },
     input: {
       width: "100%",
-      padding: "11px 12px",
-      borderRadius: "12px",
-      border: "1px solid #cbd5e1",
+      padding: "12px 13px",
+      borderRadius: "14px",
+      border: "1px solid #d3ddea",
       boxSizing: "border-box",
       fontSize: "14px",
       background: "white",
+      outline: "none",
     },
     textarea: {
       width: "100%",
-      minHeight: "100px",
-      padding: "11px 12px",
-      borderRadius: "12px",
-      border: "1px solid #cbd5e1",
+      minHeight: "110px",
+      padding: "12px 13px",
+      borderRadius: "16px",
+      border: "1px solid #d3ddea",
       boxSizing: "border-box",
       fontSize: "14px",
       background: "white",
       resize: "vertical",
+      outline: "none",
     },
     timelineWrap: {
-      background: "#f1f5f9",
-      borderRadius: "16px",
-      padding: "14px",
-      marginTop: "8px",
+      background: "#f4f7fb",
+      borderRadius: "18px",
+      padding: "16px",
+      marginTop: "10px",
+      border: "1px solid #e2e8f0",
     },
     timelineCard: {
       background: "white",
       border: "1px solid #e2e8f0",
-      borderRadius: "14px",
-      padding: "12px",
+      borderRadius: "16px",
+      padding: "14px",
       marginTop: "10px",
+      boxShadow: "0 5px 14px rgba(15,23,42,0.04)",
     },
     rowCard: {
       display: "grid",
       gridTemplateColumns: "1fr 1fr 1fr 1.2fr",
       gap: "10px",
       border: "1px solid #e2e8f0",
-      borderRadius: "16px",
+      borderRadius: "18px",
       padding: "12px",
       marginBottom: "10px",
       background: "white",
+      boxShadow: "0 5px 14px rgba(15,23,42,0.04)",
     },
     btn: {
-      border: "1px solid #cbd5e1",
+      border: "1px solid #cfd9e7",
       background: "white",
       color: "#0f172a",
-      borderRadius: "12px",
+      borderRadius: "14px",
       padding: "10px 14px",
-      fontWeight: 700,
+      fontWeight: 800,
       cursor: "pointer",
     },
     primaryBtn: {
       border: "none",
       background: "#0f172a",
       color: "white",
-      borderRadius: "12px",
-      padding: "10px 14px",
-      fontWeight: 700,
+      borderRadius: "14px",
+      padding: "11px 15px",
+      fontWeight: 800,
       cursor: "pointer",
+      boxShadow: "0 10px 18px rgba(15,23,42,0.12)",
     },
     accentBtn: {
       border: "none",
-      background: "#2563eb",
+      background: "linear-gradient(135deg, #2563eb, #1d4ed8)",
       color: "white",
-      borderRadius: "12px",
-      padding: "10px 14px",
-      fontWeight: 700,
+      borderRadius: "14px",
+      padding: "11px 15px",
+      fontWeight: 800,
       cursor: "pointer",
+      boxShadow: "0 10px 20px rgba(37,99,235,0.2)",
     },
     sideTitle: {
-      fontSize: "13px",
+      fontSize: "12px",
       fontWeight: 800,
       color: "#64748b",
-      marginBottom: "10px",
+      marginBottom: "12px",
       textTransform: "uppercase",
-      letterSpacing: "0.05em",
+      letterSpacing: "0.08em",
     },
     list: {
       margin: 0,
       paddingLeft: "18px",
-      lineHeight: 1.75,
+      lineHeight: 1.8,
       color: "#334155",
       fontSize: "14px",
     },
     box: {
-      borderRadius: "14px",
-      padding: "12px",
-      background: "#f1f5f9",
+      borderRadius: "16px",
+      padding: "14px",
+      background: "#f4f7fb",
       marginBottom: "10px",
       fontSize: "14px",
-      lineHeight: 1.6,
+      lineHeight: 1.65,
+      border: "1px solid #e2e8f0",
     },
     pricingGrid: {
       display: "grid",
       gridTemplateColumns: "1fr",
-      gap: "10px",
+      gap: "12px",
     },
     pricingCard: {
-      borderRadius: "16px",
-      padding: "14px",
-      border: "1px solid #dbe3f0",
+      borderRadius: "20px",
+      padding: "16px",
+      border: "1px solid #dde6f2",
       background: "#ffffff",
+      boxShadow: "0 8px 22px rgba(15,23,42,0.05)",
     },
     toolbar: {
       marginTop: "14px",
@@ -677,12 +699,12 @@ export default function DepositDefender() {
       width: "100%",
       minHeight: "360px",
       padding: "14px",
-      borderRadius: "16px",
-      border: "1px solid #cbd5e1",
+      borderRadius: "18px",
+      border: "1px solid #d3ddea",
       background: "#fff",
       boxSizing: "border-box",
       whiteSpace: "pre-wrap",
-      lineHeight: 1.65,
+      lineHeight: 1.7,
       fontSize: "14px",
     },
     copyNote: {
@@ -695,12 +717,12 @@ export default function DepositDefender() {
 
   const warningStyle =
     overdueStatus.tone === "risk"
-      ? { ...styles.warningCard, background: "#fef2f2", color: "#991b1b" }
+      ? { ...styles.warningCard, background: "#fef2f2", color: "#991b1b", border: "1px solid #fecaca" }
       : overdueStatus.tone === "warn"
-      ? { ...styles.warningCard, background: "#fff7ed", color: "#9a3412" }
+      ? { ...styles.warningCard, background: "#fff7ed", color: "#9a3412", border: "1px solid #fed7aa" }
       : overdueStatus.tone === "good"
-      ? { ...styles.warningCard, background: "#ecfdf5", color: "#047857" }
-      : { ...styles.warningCard, background: "#eff6ff", color: "#1d4ed8" };
+      ? { ...styles.warningCard, background: "#ecfdf5", color: "#047857", border: "1px solid #a7f3d0" }
+      : { ...styles.warningCard, background: "#eff6ff", color: "#1d4ed8", border: "1px solid #bfdbfe" };
 
   const isMobile = typeof window !== "undefined" && window.innerWidth < 960;
   if (isMobile) {
@@ -708,7 +730,7 @@ export default function DepositDefender() {
     styles.mainGrid.gridTemplateColumns = "1fr";
     styles.formGrid.gridTemplateColumns = "1fr";
     styles.rowCard.gridTemplateColumns = "1fr";
-    styles.h1.fontSize = "32px";
+    styles.h1.fontSize = "34px";
   }
 
   return (
@@ -717,9 +739,9 @@ export default function DepositDefender() {
         <div style={styles.heroGrid}>
           <div style={styles.hero}>
             <div style={styles.badge}>Local-first MVP</div>
-            <h1 style={styles.h1}>Deposit Defender</h1>
+            <h1 style={styles.h1}>Get your deposit back with a cleaner case file.</h1>
             <div style={styles.mutedHero}>
-              Track proof, deductions, and landlord communication in one place so you can move faster when your security deposit is delayed or disputed.
+              Deposit Defender helps renters turn messy move-out details into a tighter case with proof, timing, communication history, and exportable summaries.
             </div>
             <div style={styles.chipRow}>
               <span style={styles.chip}>Timeline generator</span>
@@ -746,11 +768,11 @@ export default function DepositDefender() {
                 <div style={styles.statLabel}>Claimed</div>
                 <div style={styles.statValue}>${totalClaimed.toLocaleString()}</div>
               </div>
-              <div style={{ ...styles.statBox, background: "#ecfdf5" }}>
+              <div style={{ ...styles.statBox, background: "#ecfdf5", border: "1px solid #a7f3d0" }}>
                 <div style={{ ...styles.statLabel, color: "#047857" }}>Estimated return</div>
                 <div style={{ ...styles.statValue, color: "#047857" }}>${estimatedReturn.toLocaleString()}</div>
               </div>
-              <div style={{ ...styles.statBox, background: "#eff6ff" }}>
+              <div style={{ ...styles.statBox, background: "#eff6ff", border: "1px solid #bfdbfe" }}>
                 <div style={{ ...styles.statLabel, color: "#0369a1" }}>Evidence items</div>
                 <div style={{ ...styles.statValue, color: "#0369a1" }}>{data.evidence.length}</div>
               </div>
@@ -832,7 +854,7 @@ export default function DepositDefender() {
                   <textarea style={styles.textarea} value={data.notes} onChange={(e) => updateField("notes", e.target.value)} />
                 </div>
 
-                <div style={{ ...styles.box, marginTop: "14px", background: "#eff6ff" }}>
+                <div style={{ ...styles.box, marginTop: "14px", background: "#eff6ff", border: "1px solid #bfdbfe" }}>
                   <strong>Recommended next step:</strong> {recommendedNextStep}
                 </div>
 
@@ -973,18 +995,18 @@ export default function DepositDefender() {
               <div style={styles.pricingGrid}>
                 <div style={styles.pricingCard}>
                   <div style={{ fontSize: "12px", fontWeight: 800, color: "#64748b", textTransform: "uppercase" }}>Free</div>
-                  <div style={{ marginTop: "6px", fontSize: "22px", fontWeight: 800 }}>Track your case</div>
-                  <div style={{ marginTop: "6px", fontSize: "14px", color: "#475569" }}>Planner, evidence log, deductions, communication history, and draft letter.</div>
+                  <div style={{ marginTop: "6px", fontSize: "24px", fontWeight: 800 }}>Track your case</div>
+                  <div style={{ marginTop: "8px", fontSize: "14px", color: "#475569", lineHeight: 1.7 }}>Planner, evidence log, deductions, communication history, and draft letter.</div>
                 </div>
                 <div style={{ ...styles.pricingCard, border: "1px solid #93c5fd", background: "#eff6ff" }}>
                   <div style={{ fontSize: "12px", fontWeight: 800, color: "#1d4ed8", textTransform: "uppercase" }}>Pro · $9</div>
-                  <div style={{ marginTop: "6px", fontSize: "22px", fontWeight: 800 }}>Send-ready output</div>
-                  <div style={{ marginTop: "6px", fontSize: "14px", color: "#1e3a8a" }}>Polished PDF export, cleaner demand letter formatting, and stronger dispute templates.</div>
+                  <div style={{ marginTop: "6px", fontSize: "24px", fontWeight: 800 }}>Send-ready output</div>
+                  <div style={{ marginTop: "8px", fontSize: "14px", color: "#1e3a8a", lineHeight: 1.7 }}>Polished PDF export, cleaner demand letter formatting, and stronger dispute templates.</div>
                 </div>
                 <div style={styles.pricingCard}>
                   <div style={{ fontSize: "12px", fontWeight: 800, color: "#64748b", textTransform: "uppercase" }}>Bundle · $19</div>
-                  <div style={{ marginTop: "6px", fontSize: "22px", fontWeight: 800 }}>Full renter toolkit</div>
-                  <div style={{ marginTop: "6px", fontSize: "14px", color: "#475569" }}>Move-out pack, roommate split tools, budget planner, and printable case pack.</div>
+                  <div style={{ marginTop: "6px", fontSize: "24px", fontWeight: 800 }}>Full renter toolkit</div>
+                  <div style={{ marginTop: "8px", fontSize: "14px", color: "#475569", lineHeight: 1.7 }}>Move-out pack, roommate split tools, budget planner, and printable case pack.</div>
                 </div>
               </div>
             </div>
