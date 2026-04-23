@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
-export default function MoveOutDepositToolkit() {
-  const STORAGE_KEY = "move-out-deposit-toolkit-v1";
+export default function DepositDefender() {
+  const STORAGE_KEY = "deposit-defender-v2";
 
   const defaultState = {
     tenantName: "",
@@ -10,6 +10,7 @@ export default function MoveOutDepositToolkit() {
     moveOutDate: "",
     depositAmount: "",
     email: "",
+    stateName: "",
     notes: "",
     issues: [
       { id: 1, area: "Kitchen", amount: "", status: "Review", note: "" },
@@ -33,26 +34,33 @@ export default function MoveOutDepositToolkit() {
 
   const [data, setData] = useState(loadState);
   const [tab, setTab] = useState("planner");
+  const [copyMessage, setCopyMessage] = useState("");
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   }, [data]);
+
+  useEffect(() => {
+    if (!copyMessage) return;
+    const timer = setTimeout(() => setCopyMessage(""), 1800);
+    return () => clearTimeout(timer);
+  }, [copyMessage]);
 
   const timeline = useMemo(() => {
     if (!data.moveOutDate) return [];
 
     const move = new Date(data.moveOutDate);
     const tasks = [
-      { daysBefore: 30, title: "Give written notice", detail: "Send formal move-out notice and save a copy." },
-      { daysBefore: 21, title: "Review lease", detail: "Check cleaning, repainting, and deposit deduction rules." },
-      { daysBefore: 14, title: "Start photo evidence", detail: "Take room-by-room photos and label them clearly." },
-      { daysBefore: 10, title: "Book cleaning / repair", detail: "Schedule any fixes you actually owe under the lease." },
-      { daysBefore: 7, title: "Utilities and address changes", detail: "Update mailing address and confirm utility end dates." },
-      { daysBefore: 3, title: "Final walkthrough prep", detail: "Prepare checklist, questions, and compare with move-in condition." },
-      { daysBefore: 1, title: "Capture final condition", detail: "Take final timestamped photos/videos and meter readings." },
-      { daysBefore: 0, title: "Key handoff", detail: "Document return of keys and ask about deposit timeline." },
-      { daysAfter: 7, title: "Follow up on deposit", detail: "If no update, send a polite written follow-up." },
-      { daysAfter: 14, title: "Escalation record", detail: "Log all deductions, missing responses, and next steps." },
+      { daysBefore: 30, title: "Give written notice", detail: "Send a written move-out notice and keep a copy for your records." },
+      { daysBefore: 21, title: "Review lease terms", detail: "Check cleaning, repainting, repair, and deposit deduction language in your lease." },
+      { daysBefore: 14, title: "Start photo evidence", detail: "Take room-by-room photos and short videos. Name files clearly by room and date." },
+      { daysBefore: 10, title: "Book cleaning or repair", detail: "Only fix what you actually owe. Save receipts for any professional cleaning or repairs." },
+      { daysBefore: 7, title: "Prepare a handoff plan", detail: "Confirm utility shutoff, forwarding address, and key return process in writing." },
+      { daysBefore: 3, title: "Final walkthrough prep", detail: "Prepare your evidence list and compare move-out condition against move-in notes or photos." },
+      { daysBefore: 1, title: "Capture final condition", detail: "Take final timestamped photos, videos, appliance shots, and meter readings." },
+      { daysBefore: 0, title: "Key handoff", detail: "Document the key return and ask for the deposit timeline in writing." },
+      { daysAfter: 7, title: "Deposit follow-up", detail: "If there is no update, send a short written follow-up and log the response." },
+      { daysAfter: 14, title: "Prepare demand letter", detail: "If deductions feel inflated or the deposit is overdue, prepare your evidence pack and demand letter." },
     ];
 
     return tasks.map((task, idx) => {
@@ -66,6 +74,18 @@ export default function MoveOutDepositToolkit() {
   const totalClaimed = data.issues.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
   const deposit = parseFloat(data.depositAmount) || 0;
   const estimatedReturn = Math.max(deposit - totalClaimed, 0);
+
+  const evidenceStrength = useMemo(() => {
+    let score = 0;
+    if (data.evidence.filter((x) => x.fileRef || x.note).length >= 3) score += 35;
+    if (data.communications.filter((x) => x.subject || x.summary).length >= 2) score += 25;
+    if (data.issues.filter((x) => x.status === "Disputed").length >= 1) score += 15;
+    if (data.moveOutDate) score += 10;
+    if (data.tenantName && data.landlordName && data.propertyAddress) score += 15;
+    return Math.min(score, 100);
+  }, [data]);
+
+  const evidenceLabel = evidenceStrength >= 75 ? "Strong" : evidenceStrength >= 45 ? "Medium" : "Weak";
 
   const updateField = (field, value) => setData((prev) => ({ ...prev, [field]: value }));
 
@@ -98,14 +118,88 @@ export default function MoveOutDepositToolkit() {
     }
   };
 
+  const loadSampleData = () => {
+    setData({
+      tenantName: "Jordan Miller",
+      propertyAddress: "1228 Maple Street, Apt 3B",
+      landlordName: "Northview Property Group",
+      moveOutDate: "2026-08-31",
+      depositAmount: "1800",
+      email: "jordan@example.com",
+      stateName: "California",
+      notes: "Landlord mentioned carpet cleaning and wall patching charges, but the apartment was returned in normal condition. I have move-in and move-out photos.",
+      issues: [
+        { id: 1, area: "Carpet cleaning", amount: "250", status: "Disputed", note: "Normal wear and no major stains in final photos." },
+        { id: 2, area: "Wall patching", amount: "175", status: "Review", note: "Small nail holes only." },
+      ],
+      communications: [
+        { id: 1, date: "2026-08-01", channel: "Email", subject: "Move-out notice", summary: "Gave written 30-day notice and asked about key return." },
+        { id: 2, date: "2026-09-07", channel: "Email", subject: "Deposit follow-up", summary: "Asked for update on deposit and itemized deductions." },
+      ],
+      evidence: [
+        { id: 1, date: "2026-08-30", room: "Living Room", fileRef: "living-room-final.jpg", note: "Walls and floors clean with no visible damage." },
+        { id: 2, date: "2026-08-30", room: "Bedroom", fileRef: "bedroom-final.jpg", note: "Carpet vacuumed and no visible stains." },
+        { id: 3, date: "2026-08-31", room: "Kitchen", fileRef: "kitchen-video.mp4", note: "Countertops, oven, and sink clean at handoff." },
+      ],
+    });
+    setTab("planner");
+  };
+
   const downloadJson = () => {
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "move-out-deposit-toolkit.json";
+    a.download = "deposit-defender.json";
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  const demandLetter = useMemo(() => {
+    const disputedItems = data.issues.filter((item) => item.status === "Disputed" || item.status === "Review");
+    const disputedText = disputedItems.length
+      ? disputedItems
+          .map((item) => `- ${item.area}${item.amount ? `: $${item.amount}` : ""}${item.note ? ` (${item.note})` : ""}`)
+          .join("
+")
+      : "- No disputed deductions entered yet.";
+
+    const evidenceText = data.evidence
+      .filter((item) => item.fileRef || item.note)
+      .slice(0, 5)
+      .map((item) => `- ${item.date || "Date not added"}: ${item.room}${item.fileRef ? ` | ${item.fileRef}` : ""}${item.note ? ` | ${item.note}` : ""}`)
+      .join("
+") || "- No evidence items listed yet.";
+
+    return `Subject: Request for security deposit return
+
+${data.landlordName || "Landlord / Property Manager"},
+
+I am writing regarding the security deposit for ${data.propertyAddress || "the rental property"}. I moved out on ${data.moveOutDate || "[move-out date]"} and I am requesting the prompt return of my deposit, or a clear itemized explanation for any deductions.
+
+Deposit amount: $${deposit.toLocaleString()}
+Claimed / disputed deductions currently tracked: $${totalClaimed.toLocaleString()}
+Estimated amount in dispute or expected return: $${estimatedReturn.toLocaleString()}
+
+Items I am currently questioning:
+${disputedText}
+
+Evidence I have documented:
+${evidenceText}
+
+Please send the deposit return and/or itemized deduction statement to ${data.email || "[your email]"}. If additional information is needed, I can provide supporting photos, videos, and written records.
+
+Thank you,
+${data.tenantName || "Your name"}`;
+  }, [data, deposit, totalClaimed, estimatedReturn]);
+
+  const copyDemandLetter = async () => {
+    try {
+      await navigator.clipboard.writeText(demandLetter);
+      setCopyMessage("Demand letter copied.");
+    } catch {
+      setCopyMessage("Copy failed. Try selecting the text manually.");
+    }
   };
 
   const tabs = [
@@ -113,6 +207,7 @@ export default function MoveOutDepositToolkit() {
     ["evidence", "Evidence Log"],
     ["deductions", "Deductions"],
     ["comms", "Comms Log"],
+    ["letter", "Demand Letter"],
   ];
 
   const styles = {
@@ -125,33 +220,33 @@ export default function MoveOutDepositToolkit() {
       boxSizing: "border-box",
     },
     shell: {
-      maxWidth: "1200px",
+      maxWidth: "1240px",
       margin: "0 auto",
     },
     heroGrid: {
       display: "grid",
-      gridTemplateColumns: "1.4fr 0.9fr",
+      gridTemplateColumns: "1.45fr 0.9fr",
       gap: "16px",
       marginBottom: "16px",
     },
     panel: {
       background: "white",
       border: "1px solid #e2e8f0",
-      borderRadius: "20px",
+      borderRadius: "22px",
       padding: "16px",
       boxShadow: "0 1px 2px rgba(15,23,42,0.06)",
     },
     hero: {
       background: "linear-gradient(135deg, #0f172a, #1e293b)",
       color: "white",
-      borderRadius: "24px",
+      borderRadius: "28px",
       padding: "24px",
-      boxShadow: "0 10px 25px rgba(15,23,42,0.15)",
+      boxShadow: "0 10px 25px rgba(15,23,42,0.16)",
     },
     badge: {
       display: "inline-block",
       background: "rgba(255,255,255,0.12)",
-      padding: "6px 10px",
+      padding: "6px 12px",
       borderRadius: "999px",
       fontSize: "12px",
       fontWeight: 700,
@@ -160,27 +255,35 @@ export default function MoveOutDepositToolkit() {
       marginBottom: "12px",
     },
     h1: {
-      fontSize: "38px",
+      fontSize: "42px",
       margin: "0 0 10px",
-      lineHeight: 1.1,
+      lineHeight: 1.08,
     },
     mutedHero: {
-      color: "#cbd5e1",
-      fontSize: "15px",
-      lineHeight: 1.6,
-      maxWidth: "700px",
+      color: "#d7e0ee",
+      fontSize: "16px",
+      lineHeight: 1.65,
+      maxWidth: "720px",
       marginBottom: "14px",
     },
     chipRow: {
       display: "flex",
       flexWrap: "wrap",
       gap: "8px",
+      marginBottom: "14px",
     },
     chip: {
       background: "rgba(255,255,255,0.12)",
       borderRadius: "999px",
       padding: "7px 12px",
       fontSize: "12px",
+      fontWeight: 600,
+    },
+    heroActions: {
+      display: "flex",
+      flexWrap: "wrap",
+      gap: "8px",
+      marginTop: "12px",
     },
     quickGrid: {
       display: "grid",
@@ -202,9 +305,15 @@ export default function MoveOutDepositToolkit() {
       fontSize: "28px",
       fontWeight: 800,
     },
+    scoreCard: {
+      borderRadius: "16px",
+      padding: "14px",
+      background: "#fff7ed",
+      marginTop: "12px",
+    },
     mainGrid: {
       display: "grid",
-      gridTemplateColumns: "1.2fr 0.8fr",
+      gridTemplateColumns: "1.2fr 0.78fr",
       gap: "16px",
     },
     tabRow: {
@@ -240,13 +349,13 @@ export default function MoveOutDepositToolkit() {
     label: {
       display: "block",
       fontSize: "13px",
-      fontWeight: 600,
+      fontWeight: 700,
       marginBottom: "6px",
       color: "#334155",
     },
     input: {
       width: "100%",
-      padding: "10px 12px",
+      padding: "11px 12px",
       borderRadius: "12px",
       border: "1px solid #cbd5e1",
       boxSizing: "border-box",
@@ -255,8 +364,8 @@ export default function MoveOutDepositToolkit() {
     },
     textarea: {
       width: "100%",
-      minHeight: "90px",
-      padding: "10px 12px",
+      minHeight: "100px",
+      padding: "11px 12px",
       borderRadius: "12px",
       border: "1px solid #cbd5e1",
       boxSizing: "border-box",
@@ -293,7 +402,7 @@ export default function MoveOutDepositToolkit() {
       color: "#0f172a",
       borderRadius: "12px",
       padding: "10px 14px",
-      fontWeight: 600,
+      fontWeight: 700,
       cursor: "pointer",
     },
     primaryBtn: {
@@ -305,18 +414,27 @@ export default function MoveOutDepositToolkit() {
       fontWeight: 700,
       cursor: "pointer",
     },
+    accentBtn: {
+      border: "none",
+      background: "#2563eb",
+      color: "white",
+      borderRadius: "12px",
+      padding: "10px 14px",
+      fontWeight: 700,
+      cursor: "pointer",
+    },
     sideTitle: {
       fontSize: "13px",
-      fontWeight: 700,
+      fontWeight: 800,
       color: "#64748b",
       marginBottom: "10px",
       textTransform: "uppercase",
-      letterSpacing: "0.04em",
+      letterSpacing: "0.05em",
     },
     list: {
       margin: 0,
       paddingLeft: "18px",
-      lineHeight: 1.7,
+      lineHeight: 1.75,
       color: "#334155",
       fontSize: "14px",
     },
@@ -334,15 +452,33 @@ export default function MoveOutDepositToolkit() {
       flexWrap: "wrap",
       gap: "8px",
     },
+    letterBox: {
+      width: "100%",
+      minHeight: "360px",
+      padding: "14px",
+      borderRadius: "16px",
+      border: "1px solid #cbd5e1",
+      background: "#fff",
+      boxSizing: "border-box",
+      whiteSpace: "pre-wrap",
+      lineHeight: 1.65,
+      fontSize: "14px",
+    },
+    copyNote: {
+      fontSize: "13px",
+      color: "#0f766e",
+      fontWeight: 700,
+      marginTop: "8px",
+    },
   };
 
-  const isMobile = typeof window !== "undefined" && window.innerWidth < 900;
+  const isMobile = typeof window !== "undefined" && window.innerWidth < 960;
   if (isMobile) {
     styles.heroGrid.gridTemplateColumns = "1fr";
     styles.mainGrid.gridTemplateColumns = "1fr";
     styles.formGrid.gridTemplateColumns = "1fr";
     styles.rowCard.gridTemplateColumns = "1fr";
-    styles.h1.fontSize = "30px";
+    styles.h1.fontSize = "32px";
   }
 
   return (
@@ -360,6 +496,11 @@ export default function MoveOutDepositToolkit() {
               <span style={styles.chip}>Evidence log</span>
               <span style={styles.chip}>Deduction estimator</span>
               <span style={styles.chip}>Communication record</span>
+              <span style={styles.chip}>Demand letter draft</span>
+            </div>
+            <div style={styles.heroActions}>
+              <button style={styles.accentBtn} onClick={loadSampleData}>Try sample data</button>
+              <button style={styles.btn} onClick={() => setTab("letter")}>Open demand letter</button>
             </div>
           </div>
 
@@ -381,6 +522,13 @@ export default function MoveOutDepositToolkit() {
               <div style={{ ...styles.statBox, background: "#eff6ff" }}>
                 <div style={{ ...styles.statLabel, color: "#0369a1" }}>Evidence items</div>
                 <div style={{ ...styles.statValue, color: "#0369a1" }}>{data.evidence.length}</div>
+              </div>
+            </div>
+            <div style={styles.scoreCard}>
+              <div style={{ ...styles.statLabel, color: "#9a3412" }}>Evidence strength</div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginTop: "6px" }}>
+                <div style={{ fontSize: "30px", fontWeight: 800, color: "#9a3412" }}>{evidenceStrength}</div>
+                <div style={{ fontWeight: 700, color: "#9a3412" }}>{evidenceLabel}</div>
               </div>
             </div>
             <div style={styles.toolbar}>
@@ -432,6 +580,10 @@ export default function MoveOutDepositToolkit() {
                     <label style={styles.label}>Email</label>
                     <input style={styles.input} value={data.email} onChange={(e) => updateField("email", e.target.value)} />
                   </div>
+                  <div>
+                    <label style={styles.label}>State</label>
+                    <input style={styles.input} value={data.stateName} onChange={(e) => updateField("stateName", e.target.value)} placeholder="Example: California" />
+                  </div>
                 </div>
 
                 <div>
@@ -440,15 +592,15 @@ export default function MoveOutDepositToolkit() {
                 </div>
 
                 <div style={styles.timelineWrap}>
-                  <div style={{ fontSize: "14px", fontWeight: 700, marginBottom: "6px" }}>Auto-generated timeline</div>
+                  <div style={{ fontSize: "14px", fontWeight: 800, marginBottom: "6px" }}>Auto-generated timeline</div>
                   {!timeline.length ? (
                     <div style={{ color: "#64748b", fontSize: "14px" }}>Pick a move-out date to generate your timeline.</div>
                   ) : (
                     timeline.map((item) => (
                       <div key={item.id} style={styles.timelineCard}>
                         <div style={{ display: "flex", justifyContent: "space-between", gap: "8px", alignItems: "center" }}>
-                          <div style={{ fontWeight: 700 }}>{item.title}</div>
-                          <div style={{ background: "#f1f5f9", borderRadius: "999px", padding: "4px 10px", fontSize: "12px", fontWeight: 700 }}>{item.date}</div>
+                          <div style={{ fontWeight: 800 }}>{item.title}</div>
+                          <div style={{ background: "#f1f5f9", borderRadius: "999px", padding: "4px 10px", fontSize: "12px", fontWeight: 800 }}>{item.date}</div>
                         </div>
                         <div style={{ marginTop: "6px", color: "#475569", fontSize: "14px" }}>{item.detail}</div>
                       </div>
@@ -516,6 +668,20 @@ export default function MoveOutDepositToolkit() {
                   </div>
                 ))}
                 <button style={styles.primaryBtn} onClick={() => addListItem("communications", { date: "", channel: "Email", subject: "Follow-up", summary: "" })}>Add communication</button>
+              </div>
+            )}
+
+            {tab === "letter" && (
+              <div>
+                <div style={{ marginBottom: "12px", color: "#475569", fontSize: "14px", lineHeight: 1.7 }}>
+                  This draft turns your current tracker data into a simple deposit return request you can edit, copy, and send.
+                </div>
+                <textarea style={styles.letterBox} value={demandLetter} readOnly />
+                <div style={styles.toolbar}>
+                  <button style={styles.accentBtn} onClick={copyDemandLetter}>Copy demand letter</button>
+                  <button style={styles.btn} onClick={() => window.print()}>Print draft</button>
+                </div>
+                {copyMessage ? <div style={styles.copyNote}>{copyMessage}</div> : null}
               </div>
             )}
           </div>
