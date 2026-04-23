@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 export default function DepositDefender() {
-  const STORAGE_KEY = "deposit-defender-v4";
+  const STORAGE_KEY = "deposit-defender-v5";
 
   const defaultState = {
     tenantName: "",
@@ -228,6 +228,14 @@ export default function DepositDefender() {
     `Estimated return: $${estimatedReturn.toLocaleString()}`,
     `Evidence score: ${evidenceStrength} (${evidenceLabel})`,
   ];
+
+  const recommendedNextStep = useMemo(() => {
+    if (!data.moveOutDate) return "Add your move-out date first so the tool can calculate timing and follow-up urgency.";
+    if (evidenceCount < 3) return "Add more photos, videos, or file references before relying on your case summary.";
+    if (daysSinceMoveOut !== null && daysSinceMoveOut > 21 && commsCount < 2) return "Log a follow-up communication now so you have a clearer record if the deposit stays delayed.";
+    if (data.issues.some((x) => x.status === "Disputed")) return "Your next best move is to review the demand letter and export a clean case summary.";
+    return "You are in decent shape. Keep logging updates and export a summary if you need to escalate.";
+  }, [data.moveOutDate, evidenceCount, daysSinceMoveOut, commsCount, data.issues]);
 
   const downloadJson = () => {
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
@@ -648,6 +656,17 @@ export default function DepositDefender() {
       fontSize: "14px",
       lineHeight: 1.6,
     },
+    pricingGrid: {
+      display: "grid",
+      gridTemplateColumns: "1fr",
+      gap: "10px",
+    },
+    pricingCard: {
+      borderRadius: "16px",
+      padding: "14px",
+      border: "1px solid #dbe3f0",
+      background: "#ffffff",
+    },
     toolbar: {
       marginTop: "14px",
       display: "flex",
@@ -700,7 +719,7 @@ export default function DepositDefender() {
             <div style={styles.badge}>Local-first MVP</div>
             <h1 style={styles.h1}>Deposit Defender</h1>
             <div style={styles.mutedHero}>
-              Protect your security deposit with one simple tracker for move-out dates, evidence, deductions, and landlord communication.
+              Track proof, deductions, and landlord communication in one place so you can move faster when your security deposit is delayed or disputed.
             </div>
             <div style={styles.chipRow}>
               <span style={styles.chip}>Timeline generator</span>
@@ -811,6 +830,10 @@ export default function DepositDefender() {
                 <div>
                   <label style={styles.label}>Notes</label>
                   <textarea style={styles.textarea} value={data.notes} onChange={(e) => updateField("notes", e.target.value)} />
+                </div>
+
+                <div style={{ ...styles.box, marginTop: "14px", background: "#eff6ff" }}>
+                  <strong>Recommended next step:</strong> {recommendedNextStep}
                 </div>
 
                 <div style={styles.timelineWrap}>
@@ -946,10 +969,24 @@ export default function DepositDefender() {
             </div>
 
             <div style={{ ...styles.panel, marginTop: "16px" }}>
-              <div style={styles.sideTitle}>Simple pricing path</div>
-              <div style={styles.box}><strong>Free:</strong> planner, evidence log, and deduction tracker</div>
-              <div style={styles.box}><strong>$9 one-time:</strong> PDF export and dispute-ready templates</div>
-              <div style={styles.box}><strong>$19 bundle:</strong> move-out pack, roommate split, and budget tools</div>
+              <div style={styles.sideTitle}>Upgrade path</div>
+              <div style={styles.pricingGrid}>
+                <div style={styles.pricingCard}>
+                  <div style={{ fontSize: "12px", fontWeight: 800, color: "#64748b", textTransform: "uppercase" }}>Free</div>
+                  <div style={{ marginTop: "6px", fontSize: "22px", fontWeight: 800 }}>Track your case</div>
+                  <div style={{ marginTop: "6px", fontSize: "14px", color: "#475569" }}>Planner, evidence log, deductions, communication history, and draft letter.</div>
+                </div>
+                <div style={{ ...styles.pricingCard, border: "1px solid #93c5fd", background: "#eff6ff" }}>
+                  <div style={{ fontSize: "12px", fontWeight: 800, color: "#1d4ed8", textTransform: "uppercase" }}>Pro · $9</div>
+                  <div style={{ marginTop: "6px", fontSize: "22px", fontWeight: 800 }}>Send-ready output</div>
+                  <div style={{ marginTop: "6px", fontSize: "14px", color: "#1e3a8a" }}>Polished PDF export, cleaner demand letter formatting, and stronger dispute templates.</div>
+                </div>
+                <div style={styles.pricingCard}>
+                  <div style={{ fontSize: "12px", fontWeight: 800, color: "#64748b", textTransform: "uppercase" }}>Bundle · $19</div>
+                  <div style={{ marginTop: "6px", fontSize: "22px", fontWeight: 800 }}>Full renter toolkit</div>
+                  <div style={{ marginTop: "6px", fontSize: "14px", color: "#475569" }}>Move-out pack, roommate split tools, budget planner, and printable case pack.</div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
