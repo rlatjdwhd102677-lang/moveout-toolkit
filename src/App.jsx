@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 export default function DepositDefender() {
-  const STORAGE_KEY = "deposit-defender-v3";
+  const STORAGE_KEY = "deposit-defender-v3-fixed";
 
   const defaultState = {
     tenantName: "",
@@ -45,58 +45,6 @@ export default function DepositDefender() {
     const timer = setTimeout(() => setCopyMessage(""), 1800);
     return () => clearTimeout(timer);
   }, [copyMessage]);
-
-  const timeline = useMemo(() => {
-    if (!data.moveOutDate) return [];
-
-    const move = new Date(data.moveOutDate);
-    const tasks = [
-      { daysBefore: 30, title: "Give written notice", detail: "Send a written move-out notice and keep a copy for your records." },
-      { daysBefore: 21, title: "Review lease terms", detail: "Check cleaning, repainting, repair, and deposit deduction language in your lease." },
-      { daysBefore: 14, title: "Start photo evidence", detail: "Take room-by-room photos and short videos. Name files clearly by room and date." },
-      { daysBefore: 10, title: "Book cleaning or repair", detail: "Only fix what you actually owe. Save receipts for any professional cleaning or repairs." },
-      { daysBefore: 7, title: "Prepare a handoff plan", detail: "Confirm utility shutoff, forwarding address, and key return process in writing." },
-      { daysBefore: 3, title: "Final walkthrough prep", detail: "Prepare your evidence list and compare move-out condition against move-in notes or photos." },
-      { daysBefore: 1, title: "Capture final condition", detail: "Take final timestamped photos, videos, appliance shots, and meter readings." },
-      { daysBefore: 0, title: "Key handoff", detail: "Document the key return and ask for the deposit timeline in writing." },
-      { daysAfter: 7, title: "Deposit follow-up", detail: "If there is no update, send a short written follow-up and log the response." },
-      { daysAfter: 14, title: "Prepare demand letter", detail: "If deductions feel inflated or the deposit is overdue, prepare your evidence pack and demand letter." },
-    ];
-
-    return tasks.map((task, idx) => {
-      const d = new Date(move);
-      if (typeof task.daysBefore === "number") d.setDate(d.getDate() - task.daysBefore);
-      if (typeof task.daysAfter === "number") d.setDate(d.getDate() + task.daysAfter);
-      return { ...task, id: idx + 1, date: d.toISOString().slice(0, 10) };
-    });
-  }, [data.moveOutDate]);
-
-  const totalClaimed = data.issues.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
-  const deposit = parseFloat(data.depositAmount) || 0;
-  const estimatedReturn = Math.max(deposit - totalClaimed, 0);
-
-  const evidenceStrength = useMemo(() => {
-    let score = 0;
-    if (data.evidence.filter((x) => x.fileRef || x.note).length >= 3) score += 35;
-    if (data.communications.filter((x) => x.subject || x.summary).length >= 2) score += 25;
-    if (data.issues.filter((x) => x.status === "Disputed").length >= 1) score += 15;
-    if (data.moveOutDate) score += 10;
-    if (data.tenantName && data.landlordName && data.propertyAddress) score += 15;
-    return Math.min(score, 100);
-  }, [data]);
-
-  const evidenceLabel = evidenceStrength >= 75 ? "Strong" : evidenceStrength >= 45 ? "Medium" : "Weak";
-  const depositRiskPercent = deposit > 0 ? Math.min(100, Math.round((totalClaimed / deposit) * 100)) : 0;
-  const evidenceCount = data.evidence.filter((x) => x.fileRef || x.note).length;
-  const commsCount = data.communications.filter((x) => x.subject || x.summary).length;
-
-  const disputeChecklist = [
-    data.moveOutDate ? "Move-out date added" : "Add your move-out date",
-    evidenceCount >= 3 ? "Evidence log is building well" : "Add at least 3 evidence entries",
-    commsCount >= 2 ? "Communication history logged" : "Log at least 2 landlord contacts",
-    data.issues.some((x) => x.status === "Disputed") ? "Disputed deduction identified" : "Mark any questionable deduction as Disputed",
-    data.stateName ? `State entered: ${data.stateName}` : "Add your state for later legal guidance",
-  ];
 
   const updateField = (field, value) => {
     setData((prev) => ({ ...prev, [field]: value }));
@@ -158,6 +106,58 @@ export default function DepositDefender() {
     setTab("planner");
   };
 
+  const timeline = useMemo(() => {
+    if (!data.moveOutDate) return [];
+
+    const move = new Date(data.moveOutDate);
+    const tasks = [
+      { daysBefore: 30, title: "Give written notice", detail: "Send a written move-out notice and keep a copy for your records." },
+      { daysBefore: 21, title: "Review lease terms", detail: "Check cleaning, repainting, repair, and deposit deduction language in your lease." },
+      { daysBefore: 14, title: "Start photo evidence", detail: "Take room-by-room photos and short videos. Name files clearly by room and date." },
+      { daysBefore: 10, title: "Book cleaning or repair", detail: "Only fix what you actually owe. Save receipts for any professional cleaning or repairs." },
+      { daysBefore: 7, title: "Prepare a handoff plan", detail: "Confirm utility shutoff, forwarding address, and key return process in writing." },
+      { daysBefore: 3, title: "Final walkthrough prep", detail: "Prepare your evidence list and compare move-out condition against move-in notes or photos." },
+      { daysBefore: 1, title: "Capture final condition", detail: "Take final timestamped photos, videos, appliance shots, and meter readings." },
+      { daysBefore: 0, title: "Key handoff", detail: "Document the key return and ask for the deposit timeline in writing." },
+      { daysAfter: 7, title: "Deposit follow-up", detail: "If there is no update, send a short written follow-up and log the response." },
+      { daysAfter: 14, title: "Prepare demand letter", detail: "If deductions feel inflated or the deposit is overdue, prepare your evidence pack and demand letter." },
+    ];
+
+    return tasks.map((task, idx) => {
+      const date = new Date(move);
+      if (typeof task.daysBefore === "number") date.setDate(date.getDate() - task.daysBefore);
+      if (typeof task.daysAfter === "number") date.setDate(date.getDate() + task.daysAfter);
+      return { ...task, id: idx + 1, date: date.toISOString().slice(0, 10) };
+    });
+  }, [data.moveOutDate]);
+
+  const totalClaimed = data.issues.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
+  const deposit = parseFloat(data.depositAmount) || 0;
+  const estimatedReturn = Math.max(deposit - totalClaimed, 0);
+  const evidenceCount = data.evidence.filter((x) => x.fileRef || x.note).length;
+  const commsCount = data.communications.filter((x) => x.subject || x.summary).length;
+
+  const evidenceStrength = useMemo(() => {
+    let score = 0;
+    if (evidenceCount >= 3) score += 35;
+    if (commsCount >= 2) score += 25;
+    if (data.issues.some((x) => x.status === "Disputed")) score += 15;
+    if (data.moveOutDate) score += 10;
+    if (data.tenantName && data.landlordName && data.propertyAddress) score += 15;
+    return Math.min(score, 100);
+  }, [data, evidenceCount, commsCount]);
+
+  const evidenceLabel = evidenceStrength >= 75 ? "Strong" : evidenceStrength >= 45 ? "Medium" : "Weak";
+  const depositRiskPercent = deposit > 0 ? Math.min(100, Math.round((totalClaimed / deposit) * 100)) : 0;
+
+  const disputeChecklist = [
+    data.moveOutDate ? "Move-out date added" : "Add your move-out date",
+    evidenceCount >= 3 ? "Evidence log is building well" : "Add at least 3 evidence entries",
+    commsCount >= 2 ? "Communication history logged" : "Log at least 2 landlord contacts",
+    data.issues.some((x) => x.status === "Disputed") ? "Disputed deduction identified" : "Mark any questionable deduction as Disputed",
+    data.stateName ? `State entered: ${data.stateName}` : "Add your state for later legal guidance",
+  ];
+
   const downloadJson = () => {
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
@@ -169,6 +169,8 @@ export default function DepositDefender() {
   };
 
   const demandLetter = useMemo(() => {
+    const NL = String.fromCharCode(10);
+
     const disputedItems = data.issues.filter(
       (item) => item.status === "Disputed" || item.status === "Review"
     );
@@ -180,8 +182,7 @@ export default function DepositDefender() {
             const noteText = item.note ? ` (${item.note})` : "";
             return `- ${item.area}${amountText}${noteText}`;
           })
-          .join("
-")
+          .join(NL)
       : "- No disputed deductions entered yet.";
 
     const evidenceItems = data.evidence
@@ -195,68 +196,59 @@ export default function DepositDefender() {
       });
 
     const evidenceText = evidenceItems.length
-      ? evidenceItems.join("
-")
+      ? evidenceItems.join(NL)
       : "- No evidence items listed yet.";
 
-    return `Subject: Request for security deposit return
+    const parts = [
+      "Subject: Request for security deposit return",
+      "",
+      `${data.landlordName || "Landlord / Property Manager"},`,
+      "",
+      `I am writing regarding the security deposit for ${data.propertyAddress || "the rental property"}. I moved out on ${data.moveOutDate || "[move-out date]"} and I am requesting the prompt return of my deposit, or a clear itemized explanation for any deductions.`,
+      "",
+      `Deposit amount: $${deposit.toLocaleString()}`,
+      `Claimed / disputed deductions currently tracked: $${totalClaimed.toLocaleString()}`,
+      `Estimated amount in dispute or expected return: $${estimatedReturn.toLocaleString()}`,
+      "",
+      "Items I am currently questioning:",
+      disputedText,
+      "",
+      "Evidence I have documented:",
+      evidenceText,
+      "",
+      `Please send the deposit return and/or itemized deduction statement to ${data.email || "[your email]"}. If additional information is needed, I can provide supporting photos, videos, and written records.`,
+      "",
+      "Thank you,",
+      data.tenantName || "Your name",
+    ];
 
-${data.landlordName || "Landlord / Property Manager"},
-
-I am writing regarding the security deposit for ${
-      data.propertyAddress || "the rental property"
-    }. I moved out on ${
-      data.moveOutDate || "[move-out date]"
-    } and I am requesting the prompt return of my deposit, or a clear itemized explanation for any deductions.
-
-Deposit amount: $${deposit.toLocaleString()}
-Claimed / disputed deductions currently tracked: $${totalClaimed.toLocaleString()}
-Estimated amount in dispute or expected return: $${estimatedReturn.toLocaleString()}
-
-Items I am currently questioning:
-${disputedText}
-
-Evidence I have documented:
-${evidenceText}
-
-Please send the deposit return and/or itemized deduction statement to ${
-      data.email || "[your email]"
-    }. If additional information is needed, I can provide supporting photos, videos, and written records.
-
-Thank you,
-${data.tenantName || "Your name"}`;
+    return parts.join(NL);
   }, [data, deposit, totalClaimed, estimatedReturn]);
 
   const buildCaseSummary = () => {
-    const nl = String.fromCharCode(10);
-  
+    const NL = String.fromCharCode(10);
+
     const issueLines = data.issues.length
       ? data.issues.map(
           (item) =>
-            `- ${item.area} | $${item.amount || 0} | ${item.status}${
-              item.note ? ` | ${item.note}` : ""
-            }`
+            `- ${item.area} | $${item.amount || 0} | ${item.status}${item.note ? ` | ${item.note}` : ""}`
         )
       : ["- None"];
-  
+
     const evidenceLines = data.evidence.length
       ? data.evidence.map(
           (item) =>
-            `- ${item.date || "No date"} | ${item.room}${
-              item.fileRef ? ` | ${item.fileRef}` : ""
-            }${item.note ? ` | ${item.note}` : ""}`
+            `- ${item.date || "No date"} | ${item.room}${item.fileRef ? ` | ${item.fileRef}` : ""}${item.note ? ` | ${item.note}` : ""}`
         )
       : ["- None"];
-  
+
     const communicationLines = data.communications.length
       ? data.communications.map(
           (item) =>
-            `- ${item.date || "No date"} | ${item.channel} | ${
-              item.subject || "No subject"
-            }${item.summary ? ` | ${item.summary}` : ""}`
+            `- ${item.date || "No date"} | ${item.channel} | ${item.subject || "No subject"}${item.summary ? ` | ${item.summary}` : ""}`
         )
       : ["- None"];
-  
+
     const lines = [
       "Deposit Defender — Case Summary",
       "",
@@ -285,17 +277,17 @@ ${data.tenantName || "Your name"}`;
       "Generated demand letter:",
       demandLetter,
     ];
-  
-    return lines.join(nl);
+
+    return lines.join(NL);
   };
 
   const exportPdfSummary = () => {
-    const summary = buildCaseSummary()
+    const htmlSummary = buildCaseSummary()
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")
-      .replace(/
-/g, "<br>");
+      .split(String.fromCharCode(10))
+      .join("<br>");
 
     const printWindow = window.open("", "_blank", "width=900,height=1200");
     if (!printWindow) return;
@@ -315,7 +307,7 @@ ${data.tenantName || "Your name"}`;
         <body>
           <h1>Deposit Defender Case Summary</h1>
           <div class="meta">Use your browser's Save as PDF option in the print dialog.</div>
-          <div class="box">${summary}</div>
+          <div class="box">${htmlSummary}</div>
         </body>
       </html>
     `);
