@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 export default function DepositDefender() {
-  const STORAGE_KEY = "deposit-defender-v2";
+  const STORAGE_KEY = "deposit-defender-v3";
 
   const defaultState = {
     tenantName: "",
@@ -86,6 +86,17 @@ export default function DepositDefender() {
   }, [data]);
 
   const evidenceLabel = evidenceStrength >= 75 ? "Strong" : evidenceStrength >= 45 ? "Medium" : "Weak";
+  const depositRiskPercent = deposit > 0 ? Math.min(100, Math.round((totalClaimed / deposit) * 100)) : 0;
+  const evidenceCount = data.evidence.filter((x) => x.fileRef || x.note).length;
+  const commsCount = data.communications.filter((x) => x.subject || x.summary).length;
+
+  const disputeChecklist = [
+    data.moveOutDate ? "Move-out date added" : "Add your move-out date",
+    evidenceCount >= 3 ? "Evidence log is building well" : "Add at least 3 evidence entries",
+    commsCount >= 2 ? "Communication history logged" : "Log at least 2 landlord contacts",
+    data.issues.some((x) => x.status === "Disputed") ? "Disputed deduction identified" : "Mark any questionable deduction as Disputed",
+    data.stateName ? `State entered: ${data.stateName}` : "Add your state for later legal guidance",
+  ];
 
   const updateField = (field, value) => {
     setData((prev) => ({ ...prev, [field]: value }));
@@ -161,7 +172,7 @@ export default function DepositDefender() {
     const disputedItems = data.issues.filter(
       (item) => item.status === "Disputed" || item.status === "Review"
     );
-  
+
     const disputedText = disputedItems.length
       ? disputedItems
           .map((item) => {
@@ -169,9 +180,10 @@ export default function DepositDefender() {
             const noteText = item.note ? ` (${item.note})` : "";
             return `- ${item.area}${amountText}${noteText}`;
           })
-          .join("\n")
+          .join("
+")
       : "- No disputed deductions entered yet.";
-  
+
     const evidenceItems = data.evidence
       .filter((item) => item.fileRef || item.note)
       .slice(0, 5)
@@ -181,38 +193,138 @@ export default function DepositDefender() {
         const noteText = item.note ? ` | ${item.note}` : "";
         return `- ${dateText}: ${item.room}${fileText}${noteText}`;
       });
-  
+
     const evidenceText = evidenceItems.length
-      ? evidenceItems.join("\n")
+      ? evidenceItems.join("
+")
       : "- No evidence items listed yet.";
-  
+
     return `Subject: Request for security deposit return
-  
-  ${data.landlordName || "Landlord / Property Manager"},
-  
-  I am writing regarding the security deposit for ${
+
+${data.landlordName || "Landlord / Property Manager"},
+
+I am writing regarding the security deposit for ${
       data.propertyAddress || "the rental property"
     }. I moved out on ${
       data.moveOutDate || "[move-out date]"
     } and I am requesting the prompt return of my deposit, or a clear itemized explanation for any deductions.
-  
-  Deposit amount: $${deposit.toLocaleString()}
-  Claimed / disputed deductions currently tracked: $${totalClaimed.toLocaleString()}
-  Estimated amount in dispute or expected return: $${estimatedReturn.toLocaleString()}
-  
-  Items I am currently questioning:
-  ${disputedText}
-  
-  Evidence I have documented:
-  ${evidenceText}
-  
-  Please send the deposit return and/or itemized deduction statement to ${
+
+Deposit amount: $${deposit.toLocaleString()}
+Claimed / disputed deductions currently tracked: $${totalClaimed.toLocaleString()}
+Estimated amount in dispute or expected return: $${estimatedReturn.toLocaleString()}
+
+Items I am currently questioning:
+${disputedText}
+
+Evidence I have documented:
+${evidenceText}
+
+Please send the deposit return and/or itemized deduction statement to ${
       data.email || "[your email]"
     }. If additional information is needed, I can provide supporting photos, videos, and written records.
-  
-  Thank you,
-  ${data.tenantName || "Your name"}`;
+
+Thank you,
+${data.tenantName || "Your name"}`;
   }, [data, deposit, totalClaimed, estimatedReturn]);
+
+  const buildCaseSummary = () => {
+    const nl = String.fromCharCode(10);
+  
+    const issueLines = data.issues.length
+      ? data.issues.map(
+          (item) =>
+            `- ${item.area} | $${item.amount || 0} | ${item.status}${
+              item.note ? ` | ${item.note}` : ""
+            }`
+        )
+      : ["- None"];
+  
+    const evidenceLines = data.evidence.length
+      ? data.evidence.map(
+          (item) =>
+            `- ${item.date || "No date"} | ${item.room}${
+              item.fileRef ? ` | ${item.fileRef}` : ""
+            }${item.note ? ` | ${item.note}` : ""}`
+        )
+      : ["- None"];
+  
+    const communicationLines = data.communications.length
+      ? data.communications.map(
+          (item) =>
+            `- ${item.date || "No date"} | ${item.channel} | ${
+              item.subject || "No subject"
+            }${item.summary ? ` | ${item.summary}` : ""}`
+        )
+      : ["- None"];
+  
+    const lines = [
+      "Deposit Defender — Case Summary",
+      "",
+      `Tenant: ${data.tenantName || "Not added"}`,
+      `Property: ${data.propertyAddress || "Not added"}`,
+      `Landlord / manager: ${data.landlordName || "Not added"}`,
+      `Move-out date: ${data.moveOutDate || "Not added"}`,
+      `State: ${data.stateName || "Not added"}`,
+      `Deposit amount: $${deposit.toLocaleString()}`,
+      `Claimed deductions tracked: $${totalClaimed.toLocaleString()}`,
+      `Estimated return: $${estimatedReturn.toLocaleString()}`,
+      `Evidence strength: ${evidenceStrength} (${evidenceLabel})`,
+      "",
+      "Disputed / review deductions:",
+      ...issueLines,
+      "",
+      "Evidence log:",
+      ...evidenceLines,
+      "",
+      "Communication log:",
+      ...communicationLines,
+      "",
+      "Notes:",
+      data.notes || "None",
+      "",
+      "Generated demand letter:",
+      demandLetter,
+    ];
+  
+    return lines.join(nl);
+  };
+
+  const exportPdfSummary = () => {
+    const summary = buildCaseSummary()
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/
+/g, "<br>");
+
+    const printWindow = window.open("", "_blank", "width=900,height=1200");
+    if (!printWindow) return;
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Deposit Defender Case Summary</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 32px; color: #111827; line-height: 1.55; }
+            h1 { font-size: 24px; margin-bottom: 16px; }
+            .meta { margin-bottom: 20px; color: #4b5563; }
+            .box { border: 1px solid #d1d5db; border-radius: 12px; padding: 18px; background: #fff; }
+            @media print { body { padding: 18px; } }
+          </style>
+        </head>
+        <body>
+          <h1>Deposit Defender Case Summary</h1>
+          <div class="meta">Use your browser's Save as PDF option in the print dialog.</div>
+          <div class="box">${summary}</div>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+      printWindow.print();
+    }, 300);
+  };
 
   const copyDemandLetter = async () => {
     try {
@@ -522,6 +634,7 @@ export default function DepositDefender() {
             <div style={styles.heroActions}>
               <button style={styles.accentBtn} onClick={loadSampleData}>Try sample data</button>
               <button style={styles.btn} onClick={() => setTab("letter")}>Open demand letter</button>
+              <button style={styles.btn} onClick={exportPdfSummary}>Export PDF</button>
             </div>
           </div>
 
@@ -550,6 +663,9 @@ export default function DepositDefender() {
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginTop: "6px" }}>
                 <div style={{ fontSize: "30px", fontWeight: 800, color: "#9a3412" }}>{evidenceStrength}</div>
                 <div style={{ fontWeight: 700, color: "#9a3412" }}>{evidenceLabel}</div>
+              </div>
+              <div style={{ marginTop: "10px", fontSize: "12px", color: "#9a3412" }}>
+                Claimed vs deposit risk: {depositRiskPercent}%
               </div>
             </div>
             <div style={styles.toolbar}>
@@ -714,6 +830,15 @@ export default function DepositDefender() {
                 <li>Tracks the four things that actually matter in deposit disputes: dates, proof, deductions, and contact history.</li>
                 <li>Everything saves locally, so it works fast without sign-up friction.</li>
                 <li>Easy to expand into PDF export, state-specific guidance, and premium claim templates later.</li>
+              </ul>
+            </div>
+
+            <div style={{ ...styles.panel, marginTop: "16px" }}>
+              <div style={styles.sideTitle}>Dispute readiness checklist</div>
+              <ul style={styles.list}>
+                {disputeChecklist.map((item, idx) => (
+                  <li key={idx}>{item}</li>
+                ))}
               </ul>
             </div>
 
