@@ -161,7 +161,7 @@ export default function DepositDefender() {
     const disputedItems = data.issues.filter(
       (item) => item.status === "Disputed" || item.status === "Review"
     );
-
+  
     const disputedText = disputedItems.length
       ? disputedItems
           .map((item) => {
@@ -169,10 +169,9 @@ export default function DepositDefender() {
             const noteText = item.note ? ` (${item.note})` : "";
             return `- ${item.area}${amountText}${noteText}`;
           })
-          .join("
-")
+          .join("\n")
       : "- No disputed deductions entered yet.";
-
+  
     const evidenceItems = data.evidence
       .filter((item) => item.fileRef || item.note)
       .slice(0, 5)
@@ -182,32 +181,37 @@ export default function DepositDefender() {
         const noteText = item.note ? ` | ${item.note}` : "";
         return `- ${dateText}: ${item.room}${fileText}${noteText}`;
       });
-
+  
     const evidenceText = evidenceItems.length
-      ? evidenceItems.join("
-")
+      ? evidenceItems.join("\n")
       : "- No evidence items listed yet.";
-
+  
     return `Subject: Request for security deposit return
-
-${data.landlordName || "Landlord / Property Manager"},
-
-I am writing regarding the security deposit for ${data.propertyAddress || "the rental property"}. I moved out on ${data.moveOutDate || "[move-out date]"} and I am requesting the prompt return of my deposit, or a clear itemized explanation for any deductions.
-
-Deposit amount: $${deposit.toLocaleString()}
-Claimed / disputed deductions currently tracked: $${totalClaimed.toLocaleString()}
-Estimated amount in dispute or expected return: $${estimatedReturn.toLocaleString()}
-
-Items I am currently questioning:
-${disputedText}
-
-Evidence I have documented:
-${evidenceText}
-
-Please send the deposit return and/or itemized deduction statement to ${data.email || "[your email]"}. If additional information is needed, I can provide supporting photos, videos, and written records.
-
-Thank you,
-${data.tenantName || "Your name"}`;
+  
+  ${data.landlordName || "Landlord / Property Manager"},
+  
+  I am writing regarding the security deposit for ${
+      data.propertyAddress || "the rental property"
+    }. I moved out on ${
+      data.moveOutDate || "[move-out date]"
+    } and I am requesting the prompt return of my deposit, or a clear itemized explanation for any deductions.
+  
+  Deposit amount: $${deposit.toLocaleString()}
+  Claimed / disputed deductions currently tracked: $${totalClaimed.toLocaleString()}
+  Estimated amount in dispute or expected return: $${estimatedReturn.toLocaleString()}
+  
+  Items I am currently questioning:
+  ${disputedText}
+  
+  Evidence I have documented:
+  ${evidenceText}
+  
+  Please send the deposit return and/or itemized deduction statement to ${
+      data.email || "[your email]"
+    }. If additional information is needed, I can provide supporting photos, videos, and written records.
+  
+  Thank you,
+  ${data.tenantName || "Your name"}`;
   }, [data, deposit, totalClaimed, estimatedReturn]);
 
   const copyDemandLetter = async () => {
