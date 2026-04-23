@@ -351,9 +351,9 @@ export default function MoveOutDepositToolkit() {
         <div style={styles.heroGrid}>
           <div style={styles.hero}>
             <div style={styles.badge}>Local-first MVP</div>
-            <h1 style={styles.h1}>Move-Out Deposit Toolkit</h1>
+            <h1 style={styles.h1}>Deposit Defender</h1>
             <div style={styles.mutedHero}>
-              A focused renter tool for move-out planning, evidence collection, deduction tracking, and landlord communication logs. Built to be more useful than a generic checklist.
+              Protect your security deposit with one simple tracker for move-out dates, evidence, deductions, and landlord communication.
             </div>
             <div style={styles.chipRow}>
               <span style={styles.chip}>Timeline generator</span>
@@ -522,28 +522,28 @@ export default function MoveOutDepositToolkit() {
 
           <div>
             <div style={styles.panel}>
-              <div style={styles.sideTitle}>Why this is stronger</div>
+              <div style={styles.sideTitle}>Why renters would use this</div>
               <ul style={styles.list}>
-                <li>Not just a generic checklist — it combines timeline, proof, deductions, and contact records.</li>
-                <li>Local-first MVP means no backend cost to validate demand.</li>
-                <li>Easy to expand later into PDF export, templates, state-specific guides, and premium packs.</li>
+                <li>Tracks the four things that actually matter in deposit disputes: dates, proof, deductions, and contact history.</li>
+                <li>Everything saves locally, so it works fast without sign-up friction.</li>
+                <li>Easy to expand into PDF export, state-specific guidance, and premium claim templates later.</li>
               </ul>
             </div>
 
             <div style={{ ...styles.panel, marginTop: "16px" }}>
-              <div style={styles.sideTitle}>Monetization ladder</div>
-              <div style={styles.box}><strong>Free:</strong> basic planner + logs</div>
-              <div style={styles.box}><strong>$9 one-time:</strong> branded PDF export + premium templates</div>
-              <div style={styles.box}><strong>$19 bundle:</strong> move-out pack, roommate split, budget planner</div>
+              <div style={styles.sideTitle}>Simple pricing path</div>
+              <div style={styles.box}><strong>Free:</strong> planner, evidence log, and deduction tracker</div>
+              <div style={styles.box}><strong>$9 one-time:</strong> PDF export and dispute-ready templates</div>
+              <div style={styles.box}><strong>$19 bundle:</strong> move-out pack, roommate split, and budget tools</div>
             </div>
 
             <div style={{ ...styles.panel, marginTop: "16px" }}>
-              <div style={styles.sideTitle}>Best build path for you</div>
+              <div style={styles.sideTitle}>Best next steps</div>
               <ol style={styles.list}>
-                <li>Build local MVP first</li>
-                <li>Deploy and test search/usage</li>
-                <li>Add export and premium upsell</li>
-                <li>Expand into a toolkit site</li>
+                <li>Keep the free tool simple and fast</li>
+                <li>Publish and test search demand</li>
+                <li>Add PDF export and premium upsell</li>
+                <li>Expand into a full renter toolkit</li>
               </ol>
             </div>
           </div>
