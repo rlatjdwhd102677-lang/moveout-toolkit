@@ -41,7 +41,7 @@ export default function DepositDefender() {
   }, [data]);
 
   useEffect(() => {
-    if (!copyMessage) return;
+    if (!copyMessage) return undefined;
     const timer = setTimeout(() => setCopyMessage(""), 1800);
     return () => clearTimeout(timer);
   }, [copyMessage]);
@@ -87,7 +87,9 @@ export default function DepositDefender() {
 
   const evidenceLabel = evidenceStrength >= 75 ? "Strong" : evidenceStrength >= 45 ? "Medium" : "Weak";
 
-  const updateField = (field, value) => setData((prev) => ({ ...prev, [field]: value }));
+  const updateField = (field, value) => {
+    setData((prev) => ({ ...prev, [field]: value }));
+  };
 
   const updateListItem = (list, id, field, value) => {
     setData((prev) => ({
@@ -156,20 +158,35 @@ export default function DepositDefender() {
   };
 
   const demandLetter = useMemo(() => {
-    const disputedItems = data.issues.filter((item) => item.status === "Disputed" || item.status === "Review");
+    const disputedItems = data.issues.filter(
+      (item) => item.status === "Disputed" || item.status === "Review"
+    );
+
     const disputedText = disputedItems.length
       ? disputedItems
-          .map((item) => `- ${item.area}${item.amount ? `: $${item.amount}` : ""}${item.note ? ` (${item.note})` : ""}`)
+          .map((item) => {
+            const amountText = item.amount ? `: $${item.amount}` : "";
+            const noteText = item.note ? ` (${item.note})` : "";
+            return `- ${item.area}${amountText}${noteText}`;
+          })
           .join("
 ")
       : "- No disputed deductions entered yet.";
 
-    const evidenceText = data.evidence
+    const evidenceItems = data.evidence
       .filter((item) => item.fileRef || item.note)
       .slice(0, 5)
-      .map((item) => `- ${item.date || "Date not added"}: ${item.room}${item.fileRef ? ` | ${item.fileRef}` : ""}${item.note ? ` | ${item.note}` : ""}`)
-      .join("
-") || "- No evidence items listed yet.";
+      .map((item) => {
+        const dateText = item.date || "Date not added";
+        const fileText = item.fileRef ? ` | ${item.fileRef}` : "";
+        const noteText = item.note ? ` | ${item.note}` : "";
+        return `- ${dateText}: ${item.room}${fileText}${noteText}`;
+      });
+
+    const evidenceText = evidenceItems.length
+      ? evidenceItems.join("
+")
+      : "- No evidence items listed yet.";
 
     return `Subject: Request for security deposit return
 
