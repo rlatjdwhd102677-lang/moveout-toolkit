@@ -1,1152 +1,1307 @@
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+
+const STORAGE_KEY = "deposit-defender-sales-polish-v1";
+
+const styles = `
+:root{
+  --bg:#dfe7f2;
+  --panel:#f6f8fc;
+  --card:#ffffff;
+  --line:#cbd7ea;
+  --line-strong:#b8c7e2;
+  --text:#16233f;
+  --muted:#5d6d8f;
+  --navy:#16327a;
+  --navy-2:#2148b5;
+  --blue:#3266ff;
+  --blue-soft:#eaf0ff;
+  --green:#1ea85c;
+  --green-soft:#e9faef;
+  --shadow:0 10px 30px rgba(20, 40, 90, 0.08);
+}
+
+*{box-sizing:border-box}
+html,body,#root{
+  margin:0;
+  padding:0;
+  min-height:100%;
+  background:var(--bg);
+  color:var(--text);
+  font-family:Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+button,input,textarea,select{font:inherit}
+button{cursor:pointer;border:none}
+
+.page{
+  min-height:100vh;
+  background:linear-gradient(180deg,#e7eef7 0%, #dfe7f2 100%);
+  padding:32px 18px 48px;
+}
+
+.shell{
+  max-width:1280px;
+  margin:0 auto;
+}
+
+.top-grid{
+  display:grid;
+  grid-template-columns:minmax(0,1.5fr) minmax(320px,0.85fr);
+  gap:20px;
+  align-items:stretch;
+}
+
+.hero-card{
+  background:linear-gradient(145deg,#17306f 0%, #1f3780 55%, #20366f 100%);
+  color:#fff;
+  border-radius:28px;
+  padding:28px 28px 26px;
+  min-height:430px;
+  box-shadow:var(--shadow);
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+}
+
+.badge-row{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  margin-bottom:14px;
+}
+
+.pill{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:34px;
+  padding:8px 14px;
+  border-radius:999px;
+  font-size:12px;
+  font-weight:800;
+  letter-spacing:0.05em;
+  text-transform:uppercase;
+}
+
+.pill.hero{
+  background:rgba(255,255,255,0.14);
+  color:#fff;
+}
+
+.hero-title{
+  margin:0 0 18px;
+  font-size:clamp(46px, 5vw, 78px);
+  line-height:0.95;
+  font-weight:900;
+  letter-spacing:-0.04em;
+  max-width:720px;
+}
+
+.hero-copy{
+  margin:0;
+  max-width:760px;
+  font-size:18px;
+  line-height:1.65;
+  color:rgba(255,255,255,0.96);
+}
+
+.hero-benefits{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:12px;
+  margin-top:24px;
+}
+
+.hero-benefit{
+  padding:16px 14px;
+  border-radius:18px;
+  background:rgba(255,255,255,0.08);
+  border:1px solid rgba(255,255,255,0.12);
+  color:rgba(255,255,255,0.96);
+  font-size:15px;
+  line-height:1.52;
+  font-weight:700;
+  text-align:center;
+}
+
+.hero-actions{
+  display:flex;
+  gap:14px;
+  flex-wrap:wrap;
+  margin-top:22px;
+}
+
+.btn{
+  min-height:50px;
+  padding:14px 20px;
+  border-radius:16px;
+  font-weight:800;
+  transition:transform .15s ease, box-shadow .15s ease, background .15s ease, border-color .15s ease, opacity .15s ease;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  line-height:1.2;
+}
+.btn:hover{transform:translateY(-1px)}
+.btn:active{transform:translateY(0)}
+.btn.primary{
+  background:linear-gradient(180deg,#3a6bff 0%, #2754e9 100%);
+  color:#fff;
+  box-shadow:0 10px 20px rgba(50,102,255,0.24);
+}
+.btn.secondary{
+  background:#fff;
+  color:var(--navy);
+  border:1px solid rgba(255,255,255,0.2);
+}
+.btn.ghost{
+  background:transparent;
+  color:var(--navy-2);
+  border:1.5px dashed #8ea7ff;
+}
+
+.right-stack{display:grid;gap:18px}
+
+.stat-card{
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:26px;
+  padding:18px 18px 20px;
+  box-shadow:var(--shadow);
+}
+
+.kicker{
+  font-size:13px;
+  font-weight:900;
+  text-transform:uppercase;
+  letter-spacing:0.12em;
+  color:#445372;
+  text-align:center;
+  margin-bottom:12px;
+}
+
+.status-box{
+  border:1px solid #acc2ff;
+  background:var(--blue-soft);
+  border-radius:20px;
+  padding:18px;
+  text-align:center;
+}
+
+.status-title{
+  font-size:24px;
+  font-weight:900;
+  color:#2b58df;
+  margin:0 0 8px;
+}
+
+.status-copy{
+  margin:0;
+  color:#34539c;
+  line-height:1.55;
+}
+
+.snapshot-main{
+  text-align:center;
+  font-size:54px;
+  line-height:1;
+  font-weight:900;
+  margin:10px 0 12px;
+}
+
+.snapshot-green{
+  color:#0f8d51;
+  font-weight:900;
+  text-align:center;
+  margin-bottom:12px;
+  font-size:22px;
+}
+
+.metric-list{
+  display:grid;
+  gap:8px;
+  margin-top:12px;
+  color:var(--muted);
+  line-height:1.4;
+  text-align:center;
+}
+
+.recommend-box{text-align:center;padding:10px 10px 0}
+.recommend-title{font-size:18px;font-weight:900;margin:6px 0 8px}
+.recommend-copy{margin:0;color:#3050a2;font-weight:700;line-height:1.5}
+
+.mid-grid{
+  margin-top:20px;
+  display:grid;
+  grid-template-columns:minmax(0,1.75fr) minmax(250px,0.74fr) minmax(250px,0.82fr);
+  gap:20px;
+  align-items:start;
+}
+
+.card{
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:26px;
+  box-shadow:var(--shadow);
+}
+
+.section-card{padding:20px}
+
+.section-title{
+  margin:0 0 14px;
+  text-align:center;
+  font-size:14px;
+  font-weight:900;
+  letter-spacing:0.12em;
+  text-transform:uppercase;
+  color:#465679;
+}
+
+.form-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:16px;
+}
+
+.field-block{min-width:0}
+.field-block.span-2{grid-column:1 / -1}
+.field-label{
+  display:block;
+  text-align:center;
+  font-size:14px;
+  font-weight:900;
+  color:#37486a;
+  margin:0 0 8px;
+}
+.field-shell{position:relative}
+
+.input,.textarea,.select{
+  width:100%;
+  background:#fff;
+  border:1.5px solid var(--line-strong);
+  color:#18233e;
+  border-radius:16px;
+  padding:12px 14px;
+  outline:none;
+  transition:border-color .15s ease, box-shadow .15s ease, background .15s ease;
+  font-size:13px;
+}
+.input::placeholder,.textarea::placeholder{color:#a7b4cb}
+.input:focus,.textarea:focus,.select:focus{
+  border-color:#7ea0ff;
+  box-shadow:0 0 0 4px rgba(50,102,255,0.12);
+}
+.textarea{min-height:132px;resize:vertical;line-height:1.58;padding-right:16px}
+.valid{
+  border-color:#82d8a3 !important;
+  box-shadow:0 0 0 4px rgba(30,168,92,0.10);
+}
+.input.with-check{padding-right:46px}
+.checkmark{
+  position:absolute;
+  top:50%;
+  right:8px;
+  transform:translateY(-50%);
+  width:20px;
+  height:20px;
+  border-radius:999px;
+  background:var(--green);
+  color:#fff;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:14px;
+  font-weight:900;
+  pointer-events:none;
+}
+.checkmark.notes{
+  top:12px;
+  transform:none;
+}
+
+.progress-wrap{
+  margin-top:18px;
+  background:#eef4ff;
+  border:1px solid #bdd0f5;
+  border-radius:18px;
+  padding:12px 14px;
+}
+.progress-label{text-align:center;font-weight:800;color:#273657;margin-bottom:10px}
+.progress-bar{width:100%;height:10px;border-radius:999px;background:#d6e4ff;overflow:hidden}
+.progress-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,#3b6cff 0%, #2b59ea 100%)}
+
+.action-stack{display:grid;gap:14px}
+.action-card{
+  background:#fff;
+  border:1px solid var(--line);
+  border-radius:20px;
+  padding:18px 16px;
+  text-align:center;
+  min-height:158px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+}
+.action-card h4{margin:0 0 10px;font-size:20px;line-height:1.35;font-weight:900;color:#19284a}
+.action-card p{margin:0;color:var(--muted);line-height:1.65}
+.action-buttons-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px}
+.action-buttons-grid .btn{width:100%;min-height:52px}
+.small-btn{min-height:48px;padding:12px 14px;border-radius:14px;font-weight:900}
+.small-btn.primary{background:linear-gradient(180deg,#3a6bff 0%, #2958eb 100%);color:#fff}
+.small-btn.secondary{background:#fff;color:#152654;border:1px solid var(--line-strong)}
+.small-btn.ghost{background:#f7f9ff;border:1.5px dashed #91aafe;color:#2a58df}
+
+.plan-stack{display:grid;gap:14px}
+.plan-card{
+  width:100%;
+  text-align:center;
+  padding:20px 18px 18px;
+  background:#fff;
+  border:2px solid #d4dff2;
+  border-radius:24px;
+  transition:border-color .15s ease, box-shadow .15s ease, transform .15s ease;
+}
+.plan-card:hover{transform:translateY(-1px)}
+.plan-card.selected{border-color:#78a0ff;box-shadow:0 10px 25px rgba(50,102,255,0.12)}
+.plan-card.popular{border-color:#7ca2ff}
+.plan-top{display:flex;justify-content:center;margin-bottom:10px}
+.plan-pill{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:30px;
+  padding:6px 12px;
+  border-radius:999px;
+  font-size:12px;
+  font-weight:900;
+  letter-spacing:0.06em;
+  text-transform:uppercase;
+  background:#eff4ff;
+  color:#2148b5;
+}
+.plan-name{font-size:16px;font-weight:900;text-transform:uppercase;letter-spacing:0.08em;color:#495a7b;margin-bottom:8px}
+.plan-title{font-size:22px;font-weight:900;line-height:1.15;margin-bottom:10px}
+.plan-copy{color:var(--muted);line-height:1.6;min-height:74px}
+.plan-features{margin-top:12px;display:grid;gap:8px;text-align:left;color:#556788;font-size:13px;line-height:1.55}
+.plan-feature{display:block}
+.plan-status{margin-top:16px;font-weight:900;color:#325fe7}
+
+.timeline-card{margin-top:20px;padding:18px}
+.timeline-empty{text-align:center;color:var(--muted);padding:24px 10px;line-height:1.6}
+.timeline-list{display:grid;gap:14px}
+.timeline-item{
+  background:#fff;
+  border:1px solid var(--line);
+  border-radius:20px;
+  padding:18px 18px;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:14px;
+  align-items:start;
+}
+.timeline-item-title{font-weight:900;font-size:17px;margin-bottom:6px;color:#15244b}
+.timeline-item-copy{color:var(--muted);line-height:1.55}
+.timeline-date{white-space:nowrap;align-self:start;background:#eef3ff;color:#1a2d5f;border-radius:999px;padding:8px 12px;font-weight:900;font-size:14px}
+
+.details-card{margin-top:20px;padding:18px}
+.tabs{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+.tab{min-height:44px;padding:10px 16px;border-radius:14px;background:#e5ecf7;color:#415475;font-weight:900}
+.tab.active{background:#0f1d42;color:#fff}
+.tab-panel{display:grid;gap:14px}
+.entry-card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:14px}
+.entry-grid{display:grid;grid-template-columns:1.05fr 1.05fr 1.4fr auto;gap:10px;align-items:start}
+.entry-grid.triple{grid-template-columns:1fr 1fr 2fr auto}
+.file-row{margin-top:10px;display:flex;gap:10px;flex-wrap:wrap;align-items:flex-start}
+.upload-label{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:46px;
+  padding:10px 16px;
+  border-radius:14px;
+  font-weight:900;
+  background:linear-gradient(180deg,#3a6bff 0%, #2857e9 100%);
+  color:#fff;
+  box-shadow:0 8px 16px rgba(50,102,255,0.18);
+}
+.hidden-input{display:none}
+.file-chip{display:inline-flex;align-items:center;gap:8px;padding:10px 12px;background:#eef3ff;color:#2648a9;border:1px solid #b8ccff;border-radius:999px;font-size:13px;font-weight:800}
+.preview-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px, 1fr));gap:10px;margin-top:10px}
+.preview-card{background:#f8fbff;border:1px solid var(--line);border-radius:16px;padding:8px}
+.preview-thumb{width:100%;height:120px;object-fit:cover;border-radius:12px;background:#dfe9ff}
+.preview-video{width:100%;height:120px;border-radius:12px;background:#dfe9ff}
+.preview-caption{margin-top:8px;font-size:12px;font-weight:800;color:#37508d;word-break:break-word}
+.wide-center{display:flex;justify-content:center;margin-top:12px}
+
+.bottom-grid{margin-top:18px;display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.info-card{background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:18px;box-shadow:var(--shadow)}
+.info-card.large{grid-column:1 / -1}
+.info-card .section-title{margin-bottom:10px}
+.info-card ul{margin:0;padding-left:20px;color:#334565;line-height:1.75}
+.info-card li{margin:2px 0}
+.snapshot-table{display:grid;gap:8px;text-align:center;color:#334565;line-height:1.5}
+.bundle-toolkit{margin-top:18px}
+.bundle-box{background:#edf4ff;border:1.5px solid #b8cdf8;border-radius:18px;padding:18px;text-align:center;color:#32529d;line-height:1.6}
+.bundle-box strong{color:#17306f}
+.locked{opacity:0.86}
+
+@media (max-width: 1180px){
+  .top-grid{grid-template-columns:1fr}
+  .mid-grid{grid-template-columns:1fr}
+  .bottom-grid{grid-template-columns:1fr}
+}
+@media (max-width: 820px){
+  .page{padding:18px 12px 28px}
+  .hero-card{min-height:auto;padding:22px 18px 20px}
+  .hero-title{font-size:clamp(38px, 11vw, 62px)}
+  .hero-copy{font-size:16px}
+  .hero-benefits{grid-template-columns:1fr}
+  .form-grid{grid-template-columns:1fr}
+  .entry-grid,.entry-grid.triple{grid-template-columns:1fr}
+  .timeline-item{grid-template-columns:1fr}
+  .timeline-date{justify-self:start}
+  .action-buttons-grid{grid-template-columns:1fr}
+}
+`;
+
+const emptyForm = {
+  tenantName: "",
+  landlord: "",
+  address: "",
+  moveOutDate: "",
+  depositAmount: "",
+  email: "",
+  state: "",
+  notes: "",
+};
+
+const sampleForm = {
+  tenantName: "Jordan Miller",
+  landlord: "Northview Prop. Group",
+  address: "1228 Maple St, Apt 3B",
+  moveOutDate: "2026-08-31",
+  depositAmount: "1800",
+  email: "jordan@example.com",
+  state: "California",
+  notes:
+    "Landlord mentioned carpet cleaning and wall patching charges, but the apartment was returned in normal condition. I have move-in photos, move-out photos, and a written follow-up.",
+};
+
+const emptyEvidence = [{ date: "", area: "", note: "", files: [] }];
+const sampleEvidence = [
+  {
+    date: "2026-08-30",
+    area: "Living room",
+    note: "Walls and floors clean with no visible damage. Final room photos captured before handoff.",
+    files: [{ name: "living-room-final.jpg", type: "image/jpeg", url: "" }],
+  },
+  {
+    date: "2026-08-30",
+    area: "Bedroom",
+    note: "Carpet vacuumed and no visible stains in the final walkthrough photo set.",
+    files: [{ name: "bedroom-final.jpg", type: "image/jpeg", url: "" }],
+  },
+  {
+    date: "2026-08-31",
+    area: "Kitchen",
+    note: "Countertops, oven, and sink cleaned. Short video recorded to document final condition.",
+    files: [{ name: "kitchen-video.mp4", type: "video/mp4", url: "" }],
+  },
+];
+
+const emptyDeductions = [{ item: "", amount: "", status: "Disputed" }];
+const sampleDeductions = [
+  { item: "Carpet cleaning", amount: "250", status: "Disputed" },
+  { item: "Wall patching", amount: "175", status: "Disputed" },
+];
+
+const emptyComms = [{ date: "", channel: "", summary: "" }];
+const sampleComms = [
+  {
+    date: "2026-08-20",
+    channel: "Email",
+    summary: "Landlord mentioned carpet cleaning and wall patching charges in writing.",
+  },
+  {
+    date: "2026-09-02",
+    channel: "Email",
+    summary: "Tenant requested an itemized explanation and attached move-out condition evidence.",
+  },
+];
+
+function formatCurrency(value) {
+  const num = Number(value || 0);
+  return `$${num.toLocaleString()}`;
+}
+
+function isValidEmail(value) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || "").trim());
+}
+
+function isValidIsoDate(value) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(value || "").trim())) return false;
+  const date = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return false;
+  const [y, m, d] = value.split("-").map(Number);
+  return date.getFullYear() === y && date.getMonth() + 1 === m && date.getDate() === d;
+}
+
+function shiftDate(baseDateString, offsetDays) {
+  if (!isValidIsoDate(baseDateString)) return "";
+  const date = new Date(`${baseDateString}T00:00:00`);
+  date.setDate(date.getDate() + offsetDays);
+  return date.toISOString().slice(0, 10);
+}
+
+function generateTimeline(moveOutDate) {
+  if (!isValidIsoDate(moveOutDate)) return [];
+  return [
+    { title: "Give written notice", copy: "Send written notice and keep a copy.", date: shiftDate(moveOutDate, -30) },
+    { title: "Start evidence capture", copy: "Take room-by-room photos and short videos.", date: shiftDate(moveOutDate, -14) },
+    { title: "Confirm handoff plan", copy: "Get key return and forwarding address steps in writing.", date: shiftDate(moveOutDate, -7) },
+    { title: "Capture final condition", copy: "Take final photos, videos, and meter readings.", date: shiftDate(moveOutDate, -1) },
+    { title: "Deposit follow-up", copy: "If there is no update, send a short written follow-up.", date: shiftDate(moveOutDate, 7) },
+    { title: "Prepare demand letter", copy: "If deductions feel inflated or the process is slow, prepare your letter and evidence pack.", date: shiftDate(moveOutDate, 14) },
+  ];
+}
+
+function daysUntil(dateString) {
+  if (!isValidIsoDate(dateString)) return null;
+  const target = new Date(`${dateString}T00:00:00`).getTime();
+  const today = new Date();
+  const todayMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+  return Math.round((target - todayMidnight) / (1000 * 60 * 60 * 24));
+}
+
+function downloadFile(filename, content, mimeType = "text/plain;charset=utf-8") {
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(url);
+}
+
+function sanitizeForStorage(evidenceRows) {
+  return evidenceRows.map((row) => ({
+    ...row,
+    files: (row.files || []).map((file) => ({
+      name: file.name,
+      type: file.type,
+      size: file.size || 0,
+      url: file.url || "",
+    })),
+  }));
+}
 
 export default function App() {
-  const STORAGE_KEY = "deposit-defender-v11";
+  const detailsRef = useRef(null);
 
-  const defaultState = {
-    tenantName: "",
-    propertyAddress: "",
-    landlordName: "",
-    moveOutDate: "",
-    depositAmount: "",
-    email: "",
-    stateName: "",
-    notes: "",
-    issues: [
-      { id: 1, area: "Kitchen", amount: "", status: "Review", note: "" },
-    ],
-    communications: [
-      { id: 1, date: "", channel: "Email", subject: "Move-out notice", summary: "" },
-    ],
-    evidence: [
-      { id: 1, date: "", room: "Living Room", fileRef: "", note: "" },
-    ],
-  };
+  const heroBenefits = [
+    "Track dates, proof, and deductions in one place",
+    "Turn messy notes into a cleaner dispute record",
+    "Export a send-ready summary when you need it",
+  ];
 
-  const PLAN_ORDER = { free: 0, pro: 1, bundle: 2 };
+  const [selectedPlan, setSelectedPlan] = useState("free");
+  const [activeTab, setActiveTab] = useState("evidence");
+  const [form, setForm] = useState(emptyForm);
+  const [evidence, setEvidence] = useState(sampleEvidence);
+  const [deductions, setDeductions] = useState(sampleDeductions);
+  const [comms, setComms] = useState(sampleComms);
+  const [loaded, setLoaded] = useState(false);
 
-  const [data, setData] = useState(() => {
+  useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      return raw ? JSON.parse(raw) : defaultState;
+      if (!raw) {
+        setLoaded(true);
+        return;
+      }
+      const saved = JSON.parse(raw);
+      if (saved.form) setForm(saved.form);
+      if (saved.evidence) setEvidence(saved.evidence);
+      if (saved.deductions) setDeductions(saved.deductions);
+      if (saved.comms) setComms(saved.comms);
+      if (saved.selectedPlan) setSelectedPlan(saved.selectedPlan);
+      if (saved.activeTab) setActiveTab(saved.activeTab);
     } catch {
-      return defaultState;
+      // ignore broken storage
+    } finally {
+      setLoaded(true);
     }
-  });
-
-  const [tab, setTab] = useState("evidence");
-  const [copyMessage, setCopyMessage] = useState("");
-  const [plan, setPlan] = useState("free");
+  }, []);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-  }, [data]);
+    if (!loaded) return;
+    const payload = {
+      selectedPlan,
+      activeTab,
+      form,
+      evidence: sanitizeForStorage(evidence),
+      deductions,
+      comms,
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+  }, [loaded, selectedPlan, activeTab, form, evidence, deductions, comms]);
 
-  useEffect(() => {
-    if (!copyMessage) return undefined;
-    const timer = setTimeout(() => setCopyMessage(""), 1800);
-    return () => clearTimeout(timer);
-  }, [copyMessage]);
+  const isPro = selectedPlan === "pro";
+  const isBundle = selectedPlan === "bundle";
+  const isProPlus = isPro || isBundle;
 
-  const isPlanAtLeast = (target) => PLAN_ORDER[plan] >= PLAN_ORDER[target];
+  const validation = useMemo(
+    () => ({
+      tenantName: form.tenantName.trim().length >= 2,
+      landlord: form.landlord.trim().length >= 2,
+      address: form.address.trim().length >= 6,
+      moveOutDate: isValidIsoDate(form.moveOutDate),
+      depositAmount: Number(form.depositAmount) > 0,
+      email: isValidEmail(form.email),
+      state: form.state.trim().length >= 2,
+      notes: form.notes.trim().length >= 15,
+    }),
+    [form]
+  );
 
-  const updateField = (field, value) => {
-    setData((prev) => ({ ...prev, [field]: value }));
-  };
+  const completedFields = Object.values(validation).filter(Boolean).length;
+  const completionPct = Math.round((completedFields / Object.keys(validation).length) * 100);
 
-  const updateListItem = (list, id, field, value) => {
-    setData((prev) => ({
-      ...prev,
-      [list]: prev[list].map((item) => (item.id === id ? { ...item, [field]: value } : item)),
-    }));
-  };
+  const depositNumber = Number(form.depositAmount || 0);
+  const claimedTotal = deductions.reduce((sum, row) => sum + Number(row.amount || 0), 0);
+  const evidenceItemCount = evidence.filter((row) => row.area.trim() || row.note.trim() || row.date.trim()).length;
+  const evidenceFileCount = evidence.reduce((sum, row) => sum + (row.files?.length || 0), 0);
+  const commCount = comms.filter((row) => row.date.trim() || row.channel.trim() || row.summary.trim()).length;
 
-  const addListItem = (list, template) => {
-    setData((prev) => ({
-      ...prev,
-      [list]: [...prev[list], { id: Date.now(), ...template }],
-    }));
-  };
+  const evidenceScore = Math.min(
+    100,
+    evidenceItemCount * 18 + evidenceFileCount * 10 + commCount * 12 + (validation.moveOutDate ? 10 : 0) + (validation.state ? 10 : 0)
+  );
 
-  const removeListItem = (list, id) => {
-    setData((prev) => ({
-      ...prev,
-      [list]: prev[list].filter((item) => item.id !== id),
-    }));
-  };
+  const evidenceStrength = evidenceScore >= 80 ? "Strong" : evidenceScore >= 50 ? "Moderate" : "Weak";
+  const estimatedReturn = Math.max(0, depositNumber - claimedTotal);
+  const depositRiskPct = depositNumber > 0 ? Math.min(100, Math.round((claimedTotal / depositNumber) * 100)) : 0;
 
-  const resetAll = () => {
-    if (window.confirm("Reset all saved data?")) {
-      localStorage.removeItem(STORAGE_KEY);
-      setData(defaultState);
-      setTab("evidence");
-      setPlan("free");
-    }
-  };
-
-  const loadSampleData = () => {
-    setData({
-      tenantName: "Jordan Miller",
-      propertyAddress: "1228 Maple Street, Apt 3B",
-      landlordName: "Northview Property Group",
-      moveOutDate: "2026-08-31",
-      depositAmount: "1800",
-      email: "jordan@example.com",
-      stateName: "California",
-      notes:
-        "Landlord mentioned carpet cleaning and wall patching charges, but the apartment was returned in normal condition. I have move-in photos, move-out photos, and a written follow-up.",
-      issues: [
-        {
-          id: 1,
-          area: "Carpet cleaning",
-          amount: "250",
-          status: "Disputed",
-          note: "Normal wear and no major stains in final photos.",
-        },
-        {
-          id: 2,
-          area: "Wall patching",
-          amount: "175",
-          status: "Review",
-          note: "Small nail holes only.",
-        },
-      ],
-      communications: [
-        {
-          id: 1,
-          date: "2026-08-01",
-          channel: "Email",
-          subject: "Move-out notice",
-          summary: "Gave written 30-day notice and asked about key return.",
-        },
-        {
-          id: 2,
-          date: "2026-09-07",
-          channel: "Email",
-          subject: "Deposit follow-up",
-          summary: "Asked for update on deposit and itemized deductions.",
-        },
-      ],
-      evidence: [
-        {
-          id: 1,
-          date: "2026-08-30",
-          room: "Living Room",
-          fileRef: "living-room-final.jpg",
-          note: "Walls and floors clean with no visible damage.",
-        },
-        {
-          id: 2,
-          date: "2026-08-30",
-          room: "Bedroom",
-          fileRef: "bedroom-final.jpg",
-          note: "Carpet vacuumed and no visible stains.",
-        },
-        {
-          id: 3,
-          date: "2026-08-31",
-          room: "Kitchen",
-          fileRef: "kitchen-video.mp4",
-          note: "Countertops, oven, and sink clean at handoff.",
-        },
-      ],
-    });
-    setTab("evidence");
-  };
-
-  const deposit = parseFloat(data.depositAmount) || 0;
-  const totalClaimed = data.issues.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
-  const estimatedReturn = Math.max(deposit - totalClaimed, 0);
-  const evidenceCount = data.evidence.filter((item) => item.fileRef || item.note).length;
-  const commsCount = data.communications.filter((item) => item.subject || item.summary).length;
-  const disputedCount = data.issues.filter((item) => item.status === "Disputed").length;
-
-  const daysSinceMoveOut = useMemo(() => {
-    if (!data.moveOutDate) return null;
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const move = new Date(data.moveOutDate);
-    const moveDate = new Date(move.getFullYear(), move.getMonth(), move.getDate());
-    return Math.floor((today.getTime() - moveDate.getTime()) / (1000 * 60 * 60 * 24));
-  }, [data.moveOutDate]);
-
-  const evidenceStrength = useMemo(() => {
-    let score = 0;
-    if (evidenceCount >= 3) score += 35;
-    if (commsCount >= 2) score += 25;
-    if (disputedCount >= 1) score += 15;
-    if (data.moveOutDate) score += 10;
-    if (data.tenantName && data.landlordName && data.propertyAddress) score += 15;
-    return Math.min(score, 100);
-  }, [
-    evidenceCount,
-    commsCount,
-    disputedCount,
-    data.moveOutDate,
-    data.tenantName,
-    data.landlordName,
-    data.propertyAddress,
-  ]);
-
-  const evidenceLabel = evidenceStrength >= 75 ? "Strong" : evidenceStrength >= 45 ? "Medium" : "Weak";
-  const depositRiskPercent = deposit > 0 ? Math.min(100, Math.round((totalClaimed / deposit) * 100)) : 0;
-
-  const overdueStatus = useMemo(() => {
-    if (!data.moveOutDate) {
+  const statusInfo = useMemo(() => {
+    if (!validation.moveOutDate) {
       return {
-        label: "No date yet",
-        tone: "neutral",
-        message: "Add your move-out date so the tool can tell you whether it is time to follow up.",
+        title: "No date yet",
+        copy: "Add your move-out date so the tool can tell you whether it is time to follow up.",
       };
     }
-    if (daysSinceMoveOut < 0) {
+
+    const diff = daysUntil(form.moveOutDate);
+    if (diff === null) {
       return {
-        label: "Upcoming",
-        tone: "neutral",
-        message: `Move-out is ${Math.abs(daysSinceMoveOut)} day(s) away. Keep collecting proof before handoff.`,
+        title: "No date yet",
+        copy: "Add your move-out date so the tool can judge timing and next steps.",
       };
     }
-    if (daysSinceMoveOut <= 21) {
+    if (diff > 45) {
       return {
-        label: "On track",
-        tone: "good",
-        message: `${daysSinceMoveOut} day(s) since move-out. This is the normal window to monitor updates and keep records clean.`,
+        title: "Upcoming",
+        copy: `Move-out is ${diff} day(s) away. Keep collecting proof before handoff.`,
       };
     }
-    if (daysSinceMoveOut <= 30) {
+    if (diff >= 0) {
       return {
-        label: "Follow up now",
-        tone: "warn",
-        message: `${daysSinceMoveOut} day(s) since move-out. If you still have no clear update, you should probably follow up now.`,
+        title: "Action window",
+        copy: `Move-out is ${diff} day(s) away. Finalize evidence, notice, and handoff documentation now.`,
+      };
+    }
+    if (diff >= -21) {
+      return {
+        title: "Follow-up",
+        copy: `Move-out happened ${Math.abs(diff)} day(s) ago. Track deductions and prepare follow-up communication.`,
       };
     }
     return {
-      label: "Potentially overdue",
-      tone: "risk",
-      message: `${daysSinceMoveOut} day(s) since move-out. You may need a stronger follow-up and a dispute-ready summary.`,
+      title: "Escalation window",
+      copy: `Move-out happened ${Math.abs(diff)} day(s) ago. Review your demand letter and evidence pack now.`,
     };
-  }, [data.moveOutDate, daysSinceMoveOut]);
+  }, [form.moveOutDate, validation.moveOutDate]);
 
   const recommendedNextStep = useMemo(() => {
-    if (!data.moveOutDate) return "Add your move-out date first so the tool can judge follow-up urgency.";
-    if (evidenceCount < 3) return "Add more photos, videos, or file references before relying on your case summary.";
-    if (daysSinceMoveOut !== null && daysSinceMoveOut > 21 && commsCount < 2) return "Log a follow-up communication now so your timeline is easier to defend.";
-    if (disputedCount > 0) return "Review the demand letter and export a dispute-ready summary next.";
-    return "You are in decent shape. Keep tracking updates and export a summary if the delay continues.";
-  }, [data.moveOutDate, evidenceCount, daysSinceMoveOut, commsCount, disputedCount]);
+    if (!validation.moveOutDate) return "Add your move-out date first so the tool can judge follow-up urgency.";
+    if (evidenceFileCount < 3) return "Upload at least 3 evidence files so your case looks stronger if deductions are disputed.";
+    if (commCount < 1) return "Log at least one landlord communication so your paper trail is easier to reference.";
+    if (claimedTotal === 0) return "Enter the claimed deductions so the app can estimate your risk and likely recovery.";
+    return "Review the demand letter and export a dispute-ready summary next.";
+  }, [validation.moveOutDate, evidenceFileCount, commCount, claimedTotal]);
 
-  const timeline = useMemo(() => {
-    if (!data.moveOutDate) return [];
-    const move = new Date(data.moveOutDate);
-    const tasks = [
-      { daysBefore: 30, title: "Give written notice", detail: "Send written notice and keep a copy." },
-      { daysBefore: 14, title: "Start evidence capture", detail: "Take room-by-room photos and short videos." },
-      { daysBefore: 7, title: "Confirm handoff plan", detail: "Get key return and forwarding address steps in writing." },
-      { daysBefore: 1, title: "Capture final condition", detail: "Take final photos, videos, and meter readings." },
-      { daysAfter: 7, title: "Deposit follow-up", detail: "If there is no update, send a short written follow-up." },
-      { daysAfter: 14, title: "Prepare demand letter", detail: "If deductions feel inflated or the process is slow, prepare your letter and evidence pack." },
-    ];
+  const timeline = useMemo(() => generateTimeline(form.moveOutDate), [form.moveOutDate]);
 
-    return tasks.map((task, index) => {
-      const d = new Date(move);
-      if (typeof task.daysBefore === "number") d.setDate(d.getDate() - task.daysBefore);
-      if (typeof task.daysAfter === "number") d.setDate(d.getDate() + task.daysAfter);
-      return { ...task, id: index + 1, date: d.toISOString().slice(0, 10) };
-    });
-  }, [data.moveOutDate]);
+  const demandLetterText = useMemo(() => {
+    const deductionLines = deductions
+      .filter((d) => d.item.trim() || d.amount)
+      .map((d) => `- ${d.item || "Unspecified deduction"}: ${formatCurrency(d.amount || 0)} (${d.status || "Disputed"})`)
+      .join("\n");
 
-  const stateGuidance = useMemo(() => {
-    if (!data.stateName) {
-      return [
-        "Add your state so this case can later show state-specific reminders.",
-        "Rules often vary on timing, itemized deductions, and delivery method.",
-        "For now, keep every message, photo, and receipt in one place.",
-      ];
-    }
-    return [
-      `State entered: ${data.stateName}. Treat this as a reminder layer, not legal advice.`,
-      "Check your state's usual deposit-return timeline and itemized deduction rules.",
-      "Confirm whether written notice, mailing address, or certified delivery matters where you are.",
-    ];
-  }, [data.stateName]);
+    const evidenceLines = evidence
+      .filter((e) => e.area.trim() || e.note.trim() || e.date.trim())
+      .map((e) => `- ${e.date || "Undated"} | ${e.area || "Area not labeled"} | ${e.note || "No note"}`)
+      .join("\n");
 
-  const summaryHighlights = [
-    `Deposit: $${deposit.toLocaleString()}`,
-    `Claimed: $${totalClaimed.toLocaleString()}`,
-    `Estimated return: $${estimatedReturn.toLocaleString()}`,
-    `Evidence score: ${evidenceStrength} (${evidenceLabel})`,
-  ];
+    return `Subject: Security Deposit Demand\n\nDear ${form.landlord || "Landlord / Manager"},\n\nI am writing regarding the return of my security deposit for ${form.address || "[property address]"}.\n\nMy move-out date was ${form.moveOutDate || "[move-out date]"}, and the original deposit amount was ${formatCurrency(form.depositAmount || 0)}.\n\nThe deductions currently in dispute are:\n${deductionLines || "- No deduction items entered yet"}\n\nI dispute these charges because the property was returned in acceptable condition and I have supporting documentation, including:\n${evidenceLines || "- No evidence items entered yet"}\n\nAdditional notes:\n${form.notes || "No additional notes provided."}\n\nPlease provide a clear itemized explanation and return any remaining deposit balance promptly. If needed, I can also provide supporting evidence and communication records for review.\n\nSincerely,\n${form.tenantName || "[tenant name]"}\n${form.email || "[email]"}`;
+  }, [deductions, evidence, form]);
 
-  const caseCompletion = useMemo(() => {
-    let count = 0;
-    if (data.moveOutDate) count += 1;
-    if (deposit > 0) count += 1;
-    if (evidenceCount >= 3) count += 1;
-    if (commsCount >= 2) count += 1;
-    if (disputedCount >= 1 || totalClaimed > 0) count += 1;
-    return Math.round((count / 5) * 100);
-  }, [data.moveOutDate, deposit, evidenceCount, commsCount, disputedCount, totalClaimed]);
+  const readinessChecklist = useMemo(
+    () => [
+      { label: "Move-out date added", done: validation.moveOutDate },
+      { label: "Evidence file count looks strong", done: evidenceFileCount >= 3 },
+      { label: "Communication history logged", done: commCount >= 1 },
+      { label: "Disputed deduction identified", done: claimedTotal > 0 },
+      { label: `State entered: ${form.state || "Missing"}`, done: validation.state },
+    ],
+    [validation.moveOutDate, validation.state, evidenceFileCount, commCount, claimedTotal, form.state]
+  );
 
-  const checklistItems = [
-    data.moveOutDate ? "Move-out date added" : "Add your move-out date",
-    evidenceCount >= 3 ? "Evidence log is building well" : "Add at least 3 evidence entries",
-    commsCount >= 2 ? "Communication history logged" : "Log at least 2 landlord contacts",
-    disputedCount >= 1 ? "Disputed deduction identified" : "Mark any questionable deduction as Disputed",
-    data.stateName ? `State entered: ${data.stateName}` : "Add your state for later legal guidance",
-  ];
+  function setSampleData() {
+    setForm(sampleForm);
+    setEvidence(sampleEvidence);
+    setDeductions(sampleDeductions);
+    setComms(sampleComms);
+    setSelectedPlan("pro");
+  }
 
-  const bundleTools = [
-    "Move-out checklist pack",
-    "Roommate split worksheet",
-    "Budget planner",
-    "Printable dispute pack cover sheet",
-  ];
+  function resetAll() {
+    setForm(emptyForm);
+    setEvidence(emptyEvidence);
+    setDeductions(emptyDeductions);
+    setComms(emptyComms);
+    setActiveTab("evidence");
+    setSelectedPlan("free");
+    localStorage.removeItem(STORAGE_KEY);
+  }
 
-  const downloadJson = () => {
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "deposit-defender.json";
-    a.click();
-    URL.revokeObjectURL(url);
-  };
+  function updateForm(key, value) {
+    setForm((prev) => ({ ...prev, [key]: value }));
+  }
 
-  const formatIssueLine = (item) => {
-    const notePart = item.note ? ` | ${item.note}` : "";
-    return `- ${item.area} | $${item.amount || 0} | ${item.status}${notePart}`;
-  };
+  function updateEvidence(index, key, value) {
+    setEvidence((prev) => prev.map((row, i) => (i === index ? { ...row, [key]: value } : row)));
+  }
 
-  const formatEvidenceLine = (item) => {
-    const filePart = item.fileRef ? ` | ${item.fileRef}` : "";
-    const notePart = item.note ? ` | ${item.note}` : "";
-    return `- ${item.date || "No date"} | ${item.room}${filePart}${notePart}`;
-  };
+  function addEvidenceRow() {
+    setEvidence((prev) => [...prev, { date: "", area: "", note: "", files: [] }]);
+  }
 
-  const formatCommunicationLine = (item) => {
-    const summaryPart = item.summary ? ` | ${item.summary}` : "";
-    return `- ${item.date || "No date"} | ${item.channel} | ${item.subject || "No subject"}${summaryPart}`;
-  };
+  function deleteEvidenceRow(index) {
+    setEvidence((prev) => prev.filter((_, i) => i !== index));
+  }
 
-  const demandLetter = useMemo(() => {
-    const NL = String.fromCharCode(10);
-    const disputedItems = data.issues.filter((item) => item.status === "Disputed" || item.status === "Review");
+  function handleEvidenceFiles(index, fileList) {
+    const uploaded = Array.from(fileList || []).map((file) => ({
+      name: file.name,
+      type: file.type,
+      size: file.size,
+      url: URL.createObjectURL(file),
+    }));
 
-    const disputedText = disputedItems.length
-      ? disputedItems
-          .map((item) => {
-            const amountText = item.amount ? `: $${item.amount}` : "";
-            const noteText = item.note ? ` (${item.note})` : "";
-            return `- ${item.area}${amountText}${noteText}`;
-          })
-          .join(NL)
-      : "- No disputed deductions entered yet.";
+    setEvidence((prev) => prev.map((row, i) => (i === index ? { ...row, files: [...(row.files || []), ...uploaded] } : row)));
+  }
 
-    const evidenceRows = data.evidence
-      .filter((item) => item.fileRef || item.note)
-      .slice(0, 5)
-      .map((item) => {
-        const dateText = item.date || "Date not added";
-        const fileText = item.fileRef ? ` | ${item.fileRef}` : "";
-        const noteText = item.note ? ` | ${item.note}` : "";
-        return `- ${dateText}: ${item.room}${fileText}${noteText}`;
-      });
+  function removeEvidenceFile(rowIndex, fileIndex) {
+    setEvidence((prev) =>
+      prev.map((row, i) =>
+        i === rowIndex
+          ? {
+              ...row,
+              files: row.files.filter((_, idx) => idx !== fileIndex),
+            }
+          : row
+      )
+    );
+  }
 
-    const evidenceText = evidenceRows.length ? evidenceRows.join(NL) : "- No evidence items listed yet.";
+  function updateDeductions(index, key, value) {
+    setDeductions((prev) => prev.map((row, i) => (i === index ? { ...row, [key]: value } : row)));
+  }
 
-    const introLine = isPlanAtLeast("pro")
-      ? `I am writing regarding the security deposit for ${data.propertyAddress || "the rental property"}. I moved out on ${data.moveOutDate || "[move-out date]"} and I request the prompt return of my deposit, or a detailed itemized explanation for any deductions claimed.`
-      : `I am writing regarding the security deposit for ${data.propertyAddress || "the rental property"}. I moved out on ${data.moveOutDate || "[move-out date]"} and I am requesting the prompt return of my deposit, or a clear itemized explanation for any deductions.`;
+  function addDeductionRow() {
+    setDeductions((prev) => [...prev, { item: "", amount: "", status: "Disputed" }]);
+  }
 
-    const parts = [
-      "Subject: Request for security deposit return",
-      "",
-      `${data.landlordName || "Landlord / Property Manager"},`,
-      "",
-      introLine,
-      `Deposit amount: $${deposit.toLocaleString()}`,
-      `Claimed / disputed deductions currently tracked: $${totalClaimed.toLocaleString()}`,
-      `Estimated amount in dispute or expected return: $${estimatedReturn.toLocaleString()}`,
-      "",
-      "Items I am currently questioning:",
-      disputedText,
-      "",
-      "Evidence I have documented:",
-      evidenceText,
-      "",
-      `Please send the deposit return and/or itemized deduction statement to ${data.email || "[your email]"}. If additional information is needed, I can provide supporting photos, videos, and written records.`,
-      "",
-      "Thank you,",
-      data.tenantName || "Your name",
-    ];
+  function deleteDeductionRow(index) {
+    setDeductions((prev) => prev.filter((_, i) => i !== index));
+  }
 
-    return parts.join(NL);
-  }, [data, deposit, totalClaimed, estimatedReturn, isPlanAtLeast]);
+  function updateComms(index, key, value) {
+    setComms((prev) => prev.map((row, i) => (i === index ? { ...row, [key]: value } : row)));
+  }
 
-  const buildCaseSummary = () => {
-    const NL = String.fromCharCode(10);
-    const issueLines = data.issues.length ? data.issues.map(formatIssueLine) : ["- None"];
-    const evidenceLines = data.evidence.length ? data.evidence.map(formatEvidenceLine) : ["- None"];
-    const communicationLines = data.communications.length ? data.communications.map(formatCommunicationLine) : ["- None"];
+  function addCommsRow() {
+    setComms((prev) => [...prev, { date: "", channel: "", summary: "" }]);
+  }
 
-    const header = isPlanAtLeast("pro")
-      ? "Deposit Defender — Send-Ready Case Summary"
-      : "Deposit Defender — Case Summary";
+  function deleteCommsRow(index) {
+    setComms((prev) => prev.filter((_, i) => i !== index));
+  }
 
-    return [
-      header,
-      "",
-      `Plan: ${plan.toUpperCase()}`,
-      `Tenant: ${data.tenantName || "Not added"}`,
-      `Property: ${data.propertyAddress || "Not added"}`,
-      `Landlord / manager: ${data.landlordName || "Not added"}`,
-      `Move-out date: ${data.moveOutDate || "Not added"}`,
-      `State: ${data.stateName || "Not added"}`,
-      `Deposit amount: $${deposit.toLocaleString()}`,
-      `Claimed deductions tracked: $${totalClaimed.toLocaleString()}`,
-      `Estimated return: $${estimatedReturn.toLocaleString()}`,
-      `Evidence strength: ${evidenceStrength} (${evidenceLabel})`,
-      `Timing status: ${overdueStatus.label}`,
-      "",
-      "Disputed / review deductions:",
-      ...issueLines,
-      "",
-      "Evidence log:",
-      ...evidenceLines,
-      "",
-      "Communication log:",
-      ...communicationLines,
-      "",
-      "Notes:",
-      data.notes || "None",
-      "",
-      "Generated demand letter:",
-      demandLetter,
-    ].join(NL);
-  };
+  function scrollToDetails(tabName) {
+    setActiveTab(tabName);
+    setTimeout(() => {
+      detailsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 80);
+  }
 
-  const exportPdfSummary = () => {
-    if (!isPlanAtLeast("pro")) {
-      window.alert("Export PDF is available on Pro.");
-      return;
-    }
+  function openDemandLetter() {
+    setActiveTab("demand");
+    detailsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
 
-    const htmlSummary = buildCaseSummary()
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .split(String.fromCharCode(10))
-      .join("<br>");
+    const popup = window.open("", "_blank", "width=900,height=900");
+    if (!popup) return;
 
-    const printWindow = window.open("", "_blank", "width=900,height=1200");
-    if (!printWindow) return;
-
-    printWindow.document.write(`
+    popup.document.write(`
       <html>
         <head>
-          <title>Deposit Defender Case Summary</title>
+          <title>Demand Letter</title>
           <style>
-            body { font-family: Arial, sans-serif; padding: 32px; color: #111827; line-height: 1.55; }
-            h1 { font-size: 24px; margin-bottom: 16px; }
-            .meta { margin-bottom: 20px; color: #4b5563; }
-            .box { border: 1px solid #d1d5db; border-radius: 12px; padding: 18px; background: #fff; }
-            @media print { body { padding: 18px; } }
+            body{font-family:Arial, sans-serif; padding:32px; line-height:1.7; color:#142347;}
+            pre{white-space:pre-wrap; font-family:Arial, sans-serif; font-size:16px;}
           </style>
         </head>
         <body>
-          <h1>Deposit Defender Case Summary</h1>
-          <div class="meta">Use your browser's Save as PDF option in the print dialog.</div>
-          <div class="box">${htmlSummary}</div>
+          <h1>Demand Letter</h1>
+          <pre>${demandLetterText.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</pre>
         </body>
       </html>
     `);
-    printWindow.document.close();
-    printWindow.focus();
-    setTimeout(() => {
-      printWindow.print();
-    }, 300);
-  };
+    popup.document.close();
+  }
 
-  const copyDemandLetter = async () => {
-    try {
-      await navigator.clipboard.writeText(demandLetter);
-      setCopyMessage("Demand letter copied.");
-    } catch {
-      setCopyMessage("Copy failed. Try selecting the text manually.");
-    }
-  };
+  function exportJSON() {
+    const data = {
+      plan: selectedPlan,
+      form,
+      evidence: sanitizeForStorage(evidence),
+      deductions,
+      comms,
+      summary: {
+        deposit: depositNumber,
+        claimed: claimedTotal,
+        estimatedReturn,
+        evidenceScore,
+        evidenceStrength,
+        evidenceFileCount,
+      },
+    };
+    downloadFile("deposit-defender-case.json", JSON.stringify(data, null, 2), "application/json;charset=utf-8");
+  }
 
-  const handlePlanClick = (selectedPlan) => {
-    setPlan(selectedPlan);
-    if (selectedPlan === "free") {
-      window.alert("Switched to Free mode.");
+  function exportPDF() {
+    if (!isProPlus) {
+      alert("PDF export is a Pro feature. Switch to Pro or Bundle to unlock it.");
       return;
     }
-    if (selectedPlan === "pro") {
-      window.alert("Pro mode enabled for demo. PDF export is now unlocked.");
-      return;
-    }
-    window.alert("Bundle mode enabled for demo. Bundle-only tools are now unlocked.");
-  };
+    window.print();
+  }
 
-  const tabs = [
-    ["evidence", "Evidence Log"],
-    ["deductions", "Deductions"],
-    ["comms", "Comms Log"],
-    ["letter", "Demand Letter"],
-  ];
+  function currentPlanLabel() {
+    if (isBundle) return "bundle";
+    if (isPro) return "pro";
+    return "free";
+  }
 
   return (
     <>
-      <style>{`
-        * { box-sizing: border-box; }
-        body { margin: 0; }
-        .dd-page {
-          min-height: 100vh;
-          padding: 28px;
-          background: linear-gradient(180deg, #eef4fb 0%, #f7fafc 100%);
-          color: #0f172a;
-          font-family: Inter, Arial, sans-serif;
-        }
-        .dd-shell { max-width: 1280px; margin: 0 auto; }
-        .dd-top {
-          display: grid;
-          grid-template-columns: 1.65fr 0.95fr;
-          gap: 18px;
-          margin-bottom: 18px;
-        }
-        .dd-hero {
-          background: linear-gradient(135deg, #0f172a 0%, #172554 45%, #1e293b 100%);
-          color: white;
-          border-radius: 30px;
-          padding: 30px;
-          box-shadow: 0 18px 45px rgba(15,23,42,0.22);
-          min-height: 280px;
-          display: flex;
-          flex-direction: column;
-          justify-content: space-between;
-        }
-        .dd-badge {
-          display: inline-block;
-          background: rgba(255,255,255,0.14);
-          padding: 7px 12px;
-          border-radius: 999px;
-          font-size: 12px;
-          font-weight: 800;
-          letter-spacing: 0.08em;
-          text-transform: uppercase;
-          margin-bottom: 14px;
-        }
-        .dd-plan-chip {
-          display: inline-block;
-          margin-left: 10px;
-          padding: 7px 12px;
-          border-radius: 999px;
-          background: rgba(255,255,255,0.18);
-          font-size: 12px;
-          font-weight: 900;
-          letter-spacing: 0.08em;
-          text-transform: uppercase;
-        }
-        .dd-hero h1 {
-          font-size: 56px;
-          line-height: 0.98;
-          margin: 0 0 14px;
-          letter-spacing: -0.04em;
-          max-width: 700px;
-        }
-        .dd-hero p {
-          color: #dbe7ff;
-          font-size: 16px;
-          line-height: 1.75;
-          margin: 0;
-          max-width: 690px;
-        }
-        .dd-hero-actions {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 10px;
-          margin-top: 22px;
-        }
-        .dd-right-stack { display: grid; gap: 18px; }
-        .dd-panel {
-          background: rgba(255,255,255,0.92);
-          border: 1px solid #dde6f1;
-          border-radius: 24px;
-          padding: 18px;
-          box-shadow: 0 14px 36px rgba(15,23,42,0.08);
-          backdrop-filter: blur(6px);
-        }
-        .dd-section-title {
-          font-size: 12px;
-          font-weight: 900;
-          color: #475569;
-          text-transform: uppercase;
-          letter-spacing: 0.08em;
-          margin-bottom: 12px;
-        }
-        .dd-card-title {
-          font-size: 28px;
-          font-weight: 800;
-          line-height: 1.1;
-          margin-bottom: 10px;
-          letter-spacing: -0.02em;
-        }
-        .dd-body { display: grid; gap: 18px; }
-        .dd-main-grid {
-          display: grid;
-          grid-template-columns: 1.1fr 0.9fr;
-          gap: 18px;
-          align-items: start;
-        }
-        .dd-left-stack, .dd-right-col { display: grid; gap: 18px; }
-        .dd-split-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 18px;
-        }
-        .dd-form-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 14px;
-          margin-bottom: 14px;
-        }
-        .dd-label {
-          display: block;
-          font-size: 13px;
-          font-weight: 800;
-          margin-bottom: 7px;
-          color: #334155;
-        }
-        .dd-input, .dd-textarea, .dd-select {
-          width: 100%;
-          padding: 12px 13px;
-          border-radius: 14px;
-          border: 1px solid #d3ddea;
-          font-size: 14px;
-          background: white;
-          outline: none;
-        }
-        .dd-textarea {
-          min-height: 110px;
-          resize: vertical;
-        }
-        .dd-box {
-          border-radius: 16px;
-          padding: 14px;
-          background: #f4f7fb;
-          border: 1px solid #e2e8f0;
-          font-size: 14px;
-          line-height: 1.65;
-        }
-        .dd-progress-wrap {
-          margin-top: 8px;
-          width: 100%;
-          height: 10px;
-          border-radius: 999px;
-          background: #dbeafe;
-          overflow: hidden;
-        }
-        .dd-progress-bar {
-          height: 100%;
-          border-radius: 999px;
-          background: linear-gradient(90deg, #2563eb, #1d4ed8);
-        }
-        .dd-timeline {
-          display: grid;
-          gap: 10px;
-          margin-top: 12px;
-        }
-        .dd-timeline-item {
-          border: 1px solid #e2e8f0;
-          background: white;
-          border-radius: 16px;
-          padding: 14px;
-          box-shadow: 0 5px 14px rgba(15,23,42,0.04);
-        }
-        .dd-timeline-head {
-          display: flex;
-          justify-content: space-between;
-          gap: 8px;
-          align-items: center;
-          margin-bottom: 6px;
-        }
-        .dd-date-chip {
-          background: #f1f5f9;
-          border-radius: 999px;
-          padding: 4px 10px;
-          font-size: 12px;
-          font-weight: 800;
-        }
-        .dd-actions {
-          display: grid;
-          gap: 10px;
-          margin-top: 12px;
-        }
-        .dd-action-card {
-          border-radius: 18px;
-          padding: 14px;
-          border: 1px solid #dce6f3;
-          background: white;
-          box-shadow: 0 6px 16px rgba(15,23,42,0.05);
-        }
-        .dd-action-card strong {
-          display: block;
-          font-size: 18px;
-          margin-bottom: 6px;
-        }
-        .dd-toolbar {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 8px;
-          margin-top: 14px;
-        }
-        .dd-tabs {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 8px;
-          margin-bottom: 14px;
-        }
-        .dd-tab-active, .dd-tab-idle, .dd-btn, .dd-btn-primary, .dd-btn-accent {
-          border-radius: 14px;
-          padding: 10px 14px;
-          font-weight: 800;
-          cursor: pointer;
-          font-size: 14px;
-        }
-        .dd-tab-active {
-          background: #0f172a;
-          color: white;
-          border: none;
-        }
-        .dd-tab-idle {
-          background: #e9eff6;
-          color: #334155;
-          border: 1px solid #d8e2ef;
-        }
-        .dd-btn {
-          border: 1px solid #cfd9e7;
-          background: white;
-          color: #0f172a;
-        }
-        .dd-btn-primary {
-          border: none;
-          background: #0f172a;
-          color: white;
-          box-shadow: 0 10px 18px rgba(15,23,42,0.12);
-        }
-        .dd-btn-accent {
-          border: none;
-          background: linear-gradient(135deg, #2563eb, #1d4ed8);
-          color: white;
-          box-shadow: 0 10px 20px rgba(37,99,235,0.2);
-        }
-        .dd-btn-locked {
-          border: 1px dashed #93c5fd;
-          background: #eff6ff;
-          color: #1d4ed8;
-        }
-        .dd-row-card {
-          display: grid;
-          grid-template-columns: 1fr 1fr 1fr 1.2fr;
-          gap: 10px;
-          border: 1px solid #e2e8f0;
-          border-radius: 18px;
-          padding: 12px;
-          margin-bottom: 10px;
-          background: white;
-          box-shadow: 0 5px 14px rgba(15,23,42,0.04);
-        }
-        .dd-letter {
-          width: 100%;
-          min-height: 330px;
-          padding: 14px;
-          border-radius: 18px;
-          border: 1px solid #d3ddea;
-          background: #fff;
-          white-space: pre-wrap;
-          line-height: 1.7;
-          font-size: 14px;
-        }
-        .dd-signal-list {
-          margin: 8px 0 0;
-          padding-left: 18px;
-          line-height: 1.8;
-          color: #334155;
-          font-size: 14px;
-        }
-        .dd-upgrade-grid { display: grid; gap: 12px; }
-        .dd-upgrade-card {
-          border-radius: 20px;
-          padding: 16px;
-          border: 1px solid #dde6f2;
-          background: #ffffff;
-          box-shadow: 0 8px 22px rgba(15,23,42,0.05);
-          cursor: pointer;
-          transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
-        }
-        .dd-upgrade-card:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 14px 28px rgba(15,23,42,0.09);
-          border-color: #93c5fd;
-        }
-        .dd-upgrade-card--pro {
-          border: 2px solid #60a5fa;
-          background: linear-gradient(180deg, #eff6ff 0%, #dbeafe 100%);
-          box-shadow: 0 18px 36px rgba(37,99,235,0.16);
-        }
-        .dd-upgrade-pill {
-          display: inline-block;
-          margin-bottom: 10px;
-          padding: 6px 10px;
-          border-radius: 999px;
-          background: #2563eb;
-          color: white;
-          font-size: 11px;
-          font-weight: 900;
-          letter-spacing: 0.08em;
-          text-transform: uppercase;
-        }
-        .dd-plan-active {
-          outline: 3px solid rgba(37,99,235,0.16);
-        }
-        .dd-upgrade-cta {
-          margin-top: 12px;
-          font-size: 13px;
-          font-weight: 800;
-          color: #1d4ed8;
-        }
-        .dd-muted { color: #475569; font-size: 14px; line-height: 1.65; }
-        .dd-copy-note { font-size: 13px; color: #0f766e; font-weight: 800; margin-top: 8px; }
-        .dd-status-neutral { background: #eff6ff; border: 1px solid #bfdbfe; color: #1d4ed8; }
-        .dd-status-good { background: #ecfdf5; border: 1px solid #a7f3d0; color: #047857; }
-        .dd-status-warn { background: #fff7ed; border: 1px solid #fed7aa; color: #9a3412; }
-        .dd-status-risk { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; }
-        @media (max-width: 1200px) {
-          .dd-main-grid, .dd-split-grid { grid-template-columns: 1fr; }
-        }
-        @media (max-width: 1100px) {
-          .dd-top { grid-template-columns: 1fr; }
-        }
-        @media (max-width: 760px) {
-          .dd-page { padding: 16px; }
-          .dd-form-grid, .dd-row-card { grid-template-columns: 1fr; }
-          .dd-hero h1 { font-size: 38px; }
-        }
-      `}</style>
-
-      <div className="dd-page">
-        <div className="dd-shell">
-          <div className="dd-top">
-            <div className="dd-hero">
+      <style>{styles}</style>
+      <div className="page">
+        <div className="shell">
+          <div className="top-grid">
+            <section className="hero-card">
               <div>
-                <div className="dd-badge">Outcome-first build</div>
-                <span className="dd-plan-chip">Current plan · {plan}</span>
-                <h1>Get your deposit back faster.</h1>
-                <p>
-                  Stop guessing what to do next. Deposit Defender turns your move-out details into a cleaner dispute case with timing, proof, communication history, and exportable outputs.
+                <div className="badge-row">
+                  <span className="pill hero">Outcome-first build</span>
+                  <span className="pill hero">Current plan · {currentPlanLabel()}</span>
+                </div>
+
+                <h1 className="hero-title">Get your deposit back faster.</h1>
+
+                <p className="hero-copy">
+                  Stop guessing what to do next. Deposit Defender turns your move-out
+                  details into a cleaner dispute case with timing, proof, communication
+                  history, uploaded media, and exportable outputs.
                 </p>
-              </div>
-              <div className="dd-hero-actions">
-                <button className="dd-btn-accent" onClick={loadSampleData}>Try sample data</button>
-                <button className={isPlanAtLeast("pro") ? "dd-btn" : "dd-btn-locked dd-btn"} onClick={exportPdfSummary}>
-                  {isPlanAtLeast("pro") ? "Export PDF" : "Export PDF · Pro"}
-                </button>
-                <button className="dd-btn" onClick={() => setTab("letter")}>Open demand letter</button>
-              </div>
-            </div>
 
-            <div className="dd-right-stack">
-              <div className="dd-panel">
-                <div className="dd-section-title">1. Timing status</div>
-                <div className={`dd-box dd-status-${overdueStatus.tone}`}>
-                  <div className="dd-card-title">{overdueStatus.label}</div>
-                  <div className="dd-muted" style={{ color: "inherit" }}>{overdueStatus.message}</div>
+                <div className="hero-benefits">
+                  {heroBenefits.map((item) => (
+                    <div key={item} className="hero-benefit">{item}</div>
+                  ))}
                 </div>
               </div>
 
-              <div className="dd-panel">
-                <div className="dd-section-title">2. Risk snapshot</div>
-                <div className="dd-card-title">${estimatedReturn.toLocaleString()}</div>
-                <div className="dd-muted" style={{ color: "#047857", fontWeight: 600 }}>
-                  Estimated amount you may still recover.
-                </div>
-                <div className="dd-muted" style={{ marginTop: 12 }}>
-                  Claimed deductions: <strong>${totalClaimed.toLocaleString()}</strong><br />
-                  Deposit at risk: <strong>{depositRiskPercent}%</strong><br />
-                  Evidence score: <strong>{evidenceStrength} ({evidenceLabel})</strong>
-                </div>
+              <div className="hero-actions">
+                <button className="btn primary" onClick={setSampleData}>Try sample data</button>
+                <button className="btn secondary" onClick={exportPDF}>{isProPlus ? "Export PDF" : "Export PDF · Pro"}</button>
+                <button className="btn secondary" onClick={openDemandLetter}>Open demand letter</button>
               </div>
+            </section>
 
-              <div className="dd-panel">
-                <div className="dd-section-title">3. Recommended next step</div>
-                <div className="dd-card-title" style={{ fontSize: 22 }}>
-                  {daysSinceMoveOut !== null && daysSinceMoveOut > 21 ? "Follow up and prepare your case" : "Complete your case file"}
+            <div className="right-stack">
+              <section className="stat-card">
+                <div className="kicker">1. Timing status</div>
+                <div className="status-box">
+                  <h3 className="status-title">{statusInfo.title}</h3>
+                  <p className="status-copy">{statusInfo.copy}</p>
                 </div>
-                <div className="dd-muted" style={{ color: "#1e3a8a", fontWeight: 600 }}>
-                  {recommendedNextStep}
+              </section>
+
+              <section className="stat-card">
+                <div className="kicker">2. Risk snapshot</div>
+                <div className="snapshot-main">{formatCurrency(estimatedReturn)}</div>
+                <div className="snapshot-green">Estimated amount you may still recover.</div>
+                <div className="metric-list">
+                  <div>Claimed deductions: <strong>{formatCurrency(claimedTotal)}</strong></div>
+                  <div>Deposit at risk: <strong>{depositRiskPct}%</strong></div>
+                  <div>Evidence score: <strong>{evidenceScore} ({evidenceStrength})</strong></div>
+                  <div>Attached files: <strong>{evidenceFileCount}</strong></div>
                 </div>
-              </div>
+              </section>
+
+              <section className="stat-card">
+                <div className="kicker">3. Recommended next step</div>
+                <div className="recommend-box">
+                  <div className="recommend-title">Complete your case file</div>
+                  <p className="recommend-copy">{recommendedNextStep}</p>
+                </div>
+              </section>
             </div>
           </div>
 
-          <div className="dd-body">
-            <div className="dd-main-grid">
-              <div className="dd-left-stack">
-                <div className="dd-panel">
-                  <div className="dd-section-title">Quick case intake</div>
-                  <div className="dd-form-grid">
-                    <div>
-                      <label className="dd-label">Tenant name</label>
-                      <input className="dd-input" value={data.tenantName} onChange={(e) => updateField("tenantName", e.target.value)} />
-                    </div>
-                    <div>
-                      <label className="dd-label">Landlord / manager</label>
-                      <input className="dd-input" value={data.landlordName} onChange={(e) => updateField("landlordName", e.target.value)} />
-                    </div>
-                    <div>
-                      <label className="dd-label">Property address</label>
-                      <input className="dd-input" value={data.propertyAddress} onChange={(e) => updateField("propertyAddress", e.target.value)} />
-                    </div>
-                    <div>
-                      <label className="dd-label">Move-out date</label>
-                      <input className="dd-input" type="date" value={data.moveOutDate} onChange={(e) => updateField("moveOutDate", e.target.value)} />
-                    </div>
-                    <div>
-                      <label className="dd-label">Deposit amount ($)</label>
-                      <input className="dd-input" type="number" value={data.depositAmount} onChange={(e) => updateField("depositAmount", e.target.value)} />
-                    </div>
-                    <div>
-                      <label className="dd-label">Email</label>
-                      <input className="dd-input" value={data.email} onChange={(e) => updateField("email", e.target.value)} />
-                    </div>
-                    <div>
-                      <label className="dd-label">State</label>
-                      <input className="dd-input" value={data.stateName} onChange={(e) => updateField("stateName", e.target.value)} placeholder="Example: California" />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="dd-label">Notes</label>
-                    <textarea className="dd-textarea" value={data.notes} onChange={(e) => updateField("notes", e.target.value)} />
-                  </div>
-
-                  <div className="dd-box" style={{ marginTop: 14, background: "#eff6ff", border: "1px solid #bfdbfe" }}>
-                    <strong>Case completion:</strong> {caseCompletion}% complete
-                    <div className="dd-progress-wrap">
-                      <div className="dd-progress-bar" style={{ width: `${caseCompletion}%` }} />
-                    </div>
+          <div className="mid-grid">
+            <section className="card section-card">
+              <h2 className="section-title">Quick case intake</h2>
+              <div className="form-grid">
+                <div className="field-block">
+                  <label className="field-label">Tenant name</label>
+                  <div className="field-shell">
+                    <input className={`input ${validation.tenantName ? "valid with-check" : ""}`} value={form.tenantName} onChange={(e) => updateForm("tenantName", e.target.value)} placeholder="Enter tenant name" />
+                    {validation.tenantName && <span className="checkmark">✓</span>}
                   </div>
                 </div>
 
-                <div className="dd-panel">
-                  <div className="dd-section-title">Move-out timeline</div>
-                  {!timeline.length ? (
-                    <div className="dd-muted">Add a move-out date to generate your follow-up timeline.</div>
-                  ) : (
-                    <div className="dd-timeline">
-                      {timeline.map((item) => (
-                        <div key={item.id} className="dd-timeline-item">
-                          <div className="dd-timeline-head">
-                            <strong>{item.title}</strong>
-                            <div className="dd-date-chip">{item.date}</div>
-                          </div>
-                          <div className="dd-muted">{item.detail}</div>
+                <div className="field-block">
+                  <label className="field-label">Landlord / manager</label>
+                  <div className="field-shell">
+                    <input className={`input ${validation.landlord ? "valid with-check" : ""}`} value={form.landlord} onChange={(e) => updateForm("landlord", e.target.value)} placeholder="Enter landlord or manager" />
+                    {validation.landlord && <span className="checkmark">✓</span>}
+                  </div>
+                </div>
+
+                <div className="field-block">
+                  <label className="field-label">Property address</label>
+                  <div className="field-shell">
+                    <input className={`input ${validation.address ? "valid with-check" : ""}`} value={form.address} onChange={(e) => updateForm("address", e.target.value)} placeholder="Enter property address" />
+                    {validation.address && <span className="checkmark">✓</span>}
+                  </div>
+                </div>
+
+                <div className="field-block">
+                  <label className="field-label">Move-out date</label>
+                  <div className="field-shell">
+                    <input className={`input ${validation.moveOutDate ? "valid with-check" : ""}`} value={form.moveOutDate} onChange={(e) => updateForm("moveOutDate", e.target.value.replace(/[^\d-]/g, "").slice(0, 10))} placeholder="YYYY-MM-DD" inputMode="numeric" />
+                    {validation.moveOutDate && <span className="checkmark">✓</span>}
+                  </div>
+                </div>
+
+                <div className="field-block">
+                  <label className="field-label">Deposit amount ($)</label>
+                  <div className="field-shell">
+                    <input className={`input ${validation.depositAmount ? "valid with-check" : ""}`} value={form.depositAmount} onChange={(e) => updateForm("depositAmount", e.target.value.replace(/[^\d]/g, ""))} placeholder="Enter deposit amount" inputMode="numeric" />
+                    {validation.depositAmount && <span className="checkmark">✓</span>}
+                  </div>
+                </div>
+
+                <div className="field-block">
+                  <label className="field-label">Email</label>
+                  <div className="field-shell">
+                    <input className={`input ${validation.email ? "valid with-check" : ""}`} value={form.email} onChange={(e) => updateForm("email", e.target.value)} placeholder="Enter email address" />
+                    {validation.email && <span className="checkmark">✓</span>}
+                  </div>
+                </div>
+
+                <div className="field-block">
+                  <label className="field-label">State</label>
+                  <div className="field-shell">
+                    <input className={`input ${validation.state ? "valid with-check" : ""}`} value={form.state} onChange={(e) => updateForm("state", e.target.value)} placeholder="Enter state" />
+                    {validation.state && <span className="checkmark">✓</span>}
+                  </div>
+                </div>
+
+                <div className="field-block span-2">
+                  <label className="field-label">Notes</label>
+                  <div className="field-shell">
+                    <textarea className={`textarea ${validation.notes ? "valid" : ""}`} value={form.notes} onChange={(e) => updateForm("notes", e.target.value)} placeholder="Briefly describe the issue, your evidence, and any landlord messages here." />
+                    {validation.notes && <span className="checkmark notes">✓</span>}
+                  </div>
+                </div>
+              </div>
+
+              <div className="progress-wrap">
+                <div className="progress-label">Case completion: {completionPct}% complete</div>
+                <div className="progress-bar">
+                  <div className="progress-fill" style={{ width: `${completionPct}%` }} />
+                </div>
+              </div>
+            </section>
+
+            <section className="card section-card">
+              <h2 className="section-title">Action center</h2>
+              <div className="action-stack">
+                <div className="action-card">
+                  <h4>Turn notes into a dispute record</h4>
+                  <p>Clean up your communication history and evidence so your story is easier to explain later.</p>
+                </div>
+                <div className="action-card">
+                  <h4>Create a send-ready case pack</h4>
+                  <p>Generate a cleaner summary when you are ready to escalate, print, or send your case.</p>
+                </div>
+                <div className="action-card">
+                  <h4>Attach proof files</h4>
+                  <p>Add real photos and videos to each evidence row so your case feels documented and concrete.</p>
+                </div>
+
+                <div className="action-buttons-grid">
+                  <button className="small-btn primary" onClick={exportPDF}>{isProPlus ? "Export PDF" : "Export PDF · Pro"}</button>
+                  <button className="small-btn secondary" onClick={openDemandLetter}>Open demand letter</button>
+                  <button className="small-btn secondary" onClick={exportJSON}>Export JSON</button>
+                  <button className="small-btn secondary" onClick={() => scrollToDetails("evidence")}>Evidence log</button>
+                  <button className="small-btn secondary" onClick={setSampleData}>Load sample</button>
+                  <button className="small-btn secondary" onClick={resetAll}>Reset</button>
+                </div>
+              </div>
+            </section>
+
+            <section className="card section-card">
+              <h2 className="section-title">Upgrade path</h2>
+              <div className="plan-stack">
+                <button className={`plan-card ${selectedPlan === "free" ? "selected" : ""}`} onClick={() => setSelectedPlan("free")}>
+                  <div className="plan-name">Free</div>
+                  <div className="plan-title">Track your case</div>
+                  <div className="plan-copy">Planner, evidence log, deductions, communication history, and draft letter.</div>
+                  <div className="plan-features">
+                    <span className="plan-feature">• Track dates and deductions</span>
+                    <span className="plan-feature">• Organize proof and notes</span>
+                    <span className="plan-feature">• Draft a basic demand letter</span>
+                  </div>
+                  <div className="plan-status">{selectedPlan === "free" ? "Current free mode" : "Switch to Free"}</div>
+                </button>
+
+                <button className={`plan-card popular ${selectedPlan === "pro" ? "selected" : ""}`} onClick={() => setSelectedPlan("pro")}>
+                  <div className="plan-top"><span className="plan-pill">Most popular</span></div>
+                  <div className="plan-name">Pro · $9</div>
+                  <div className="plan-title">Send-ready output</div>
+                  <div className="plan-copy">Polished PDF export, cleaner demand letter formatting, and stronger dispute templates.</div>
+                  <div className="plan-features">
+                    <span className="plan-feature">• Export a send-ready PDF</span>
+                    <span className="plan-feature">• Use a cleaner demand letter format</span>
+                    <span className="plan-feature">• Package your case more professionally</span>
+                  </div>
+                  <div className="plan-status">{selectedPlan === "pro" ? "Current Pro mode" : "Unlock Pro"}</div>
+                </button>
+
+                <button className={`plan-card ${selectedPlan === "bundle" ? "selected" : ""}`} onClick={() => setSelectedPlan("bundle")}>
+                  <div className="plan-name">Bundle · $19</div>
+                  <div className="plan-title">Full renter toolkit</div>
+                  <div className="plan-copy">Move-out pack, roommate split tools, budget planner, and printable case pack.</div>
+                  <div className="plan-features">
+                    <span className="plan-feature">• Everything in Pro</span>
+                    <span className="plan-feature">• Extra printable renter tools</span>
+                    <span className="plan-feature">• Full toolkit for a move-out workflow</span>
+                  </div>
+                  <div className="plan-status">{selectedPlan === "bundle" ? "Current Bundle mode" : "Get bundle"}</div>
+                </button>
+              </div>
+            </section>
+          </div>
+
+          <section className="card timeline-card">
+            <h2 className="section-title">Move-out timeline</h2>
+            {timeline.length === 0 ? (
+              <div className="timeline-empty">Add a move-out date to generate your follow-up timeline.</div>
+            ) : (
+              <div className="timeline-list">
+                {timeline.map((step, index) => (
+                  <div className="timeline-item" key={`${step.title}-${index}`}>
+                    <div>
+                      <div className="timeline-item-title">{step.title}</div>
+                      <div className="timeline-item-copy">{step.copy}</div>
+                    </div>
+                    <div className="timeline-date">{step.date}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
+          <section className="card details-card" ref={detailsRef}>
+            <h2 className="section-title">Case details</h2>
+            <div className="tabs">
+              <button className={`tab ${activeTab === "evidence" ? "active" : ""}`} onClick={() => setActiveTab("evidence")}>Evidence Log</button>
+              <button className={`tab ${activeTab === "deductions" ? "active" : ""}`} onClick={() => setActiveTab("deductions")}>Deductions</button>
+              <button className={`tab ${activeTab === "comms" ? "active" : ""}`} onClick={() => setActiveTab("comms")}>Comms Log</button>
+              <button className={`tab ${activeTab === "demand" ? "active" : ""}`} onClick={() => setActiveTab("demand")}>Demand Letter</button>
+            </div>
+
+            {activeTab === "evidence" && (
+              <div className="tab-panel">
+                {evidence.map((row, index) => (
+                  <div className="entry-card" key={`evidence-${index}`}>
+                    <div className="entry-grid">
+                      <input className="input" value={row.date} onChange={(e) => updateEvidence(index, "date", e.target.value.replace(/[^\d-]/g, "").slice(0, 10))} placeholder="YYYY-MM-DD" />
+                      <input className="input" value={row.area} onChange={(e) => updateEvidence(index, "area", e.target.value)} placeholder="Area / room" />
+                      <input className="input" value={row.note} onChange={(e) => updateEvidence(index, "note", e.target.value)} placeholder="Short note about the condition" />
+                      <button className="small-btn secondary" onClick={() => deleteEvidenceRow(index)}>Delete evidence</button>
+                    </div>
+
+                    <div className="file-row">
+                      <label className="upload-label" htmlFor={`evidence-upload-${index}`}>Upload photo / video</label>
+                      <input id={`evidence-upload-${index}`} className="hidden-input" type="file" accept="image/*,video/*" multiple onChange={(e) => handleEvidenceFiles(index, e.target.files)} />
+
+                      {(row.files || []).map((file, fileIndex) => (
+                        <div key={`${file.name}-${fileIndex}`} className="file-row" style={{marginTop:0}}>
+                          <span className="file-chip">{file.name}</span>
+                          <button className="small-btn secondary" onClick={() => removeEvidenceFile(index, fileIndex)}>Remove file</button>
                         </div>
                       ))}
                     </div>
-                  )}
-                </div>
-              </div>
 
-              <div className="dd-right-col">
-                <div className="dd-split-grid">
-                  <div className="dd-panel">
-                    <div className="dd-section-title">Action center</div>
-                    <div className="dd-actions">
-                      <div className="dd-action-card">
-                        <strong>Generate a stronger paper trail</strong>
-                        <div className="dd-muted">Use the communication log and evidence log to turn loose notes into a cleaner dispute record.</div>
+                    {row.files && row.files.length > 0 && (
+                      <div className="preview-grid">
+                        {row.files.map((file, fileIndex) => {
+                          const isImage = file.type?.startsWith("image");
+                          const isVideo = file.type?.startsWith("video");
+                          return (
+                            <div className="preview-card" key={`${file.name}-${fileIndex}-preview`}>
+                              {file.url ? (
+                                isImage ? (
+                                  <img src={file.url} alt={file.name} className="preview-thumb" />
+                                ) : isVideo ? (
+                                  <video src={file.url} className="preview-video" controls />
+                                ) : (
+                                  <div className="preview-thumb" />
+                                )
+                              ) : (
+                                <div className="preview-thumb" />
+                              )}
+                              <div className="preview-caption">{file.name}</div>
+                            </div>
+                          );
+                        })}
                       </div>
-                      <div className="dd-action-card">
-                        <strong>Export your case pack</strong>
-                        <div className="dd-muted">Create a print-friendly summary when you are ready to escalate or organize your case.</div>
-                      </div>
-                      <div className="dd-action-card">
-                        <strong>Send your demand letter</strong>
-                        <div className="dd-muted">Open the letter tab, review the wording, and copy it when you are ready to send.</div>
-                      </div>
-                    </div>
-                    <div className="dd-toolbar">
-                      <button className={isPlanAtLeast("pro") ? "dd-btn-accent" : "dd-btn-locked dd-btn"} onClick={exportPdfSummary}>
-                        {isPlanAtLeast("pro") ? "Export PDF" : "Export PDF · Pro"}
-                      </button>
-                      <button className="dd-btn" onClick={() => setTab("letter")}>Open demand letter</button>
-                      <button className="dd-btn" onClick={downloadJson}>Export JSON</button>
-                      <button className="dd-btn" onClick={resetAll}>Reset</button>
-                    </div>
+                    )}
                   </div>
-
-                  <div className="dd-panel">
-                    <div className="dd-section-title">Upgrade path</div>
-                    <div className="dd-upgrade-grid">
-                      <div className={`dd-upgrade-card ${plan === "free" ? "dd-plan-active" : ""}`} onClick={() => handlePlanClick("free") }>
-                        <div className="dd-section-title" style={{ marginBottom: 6 }}>Free</div>
-                        <div className="dd-card-title" style={{ fontSize: 24 }}>Track your case</div>
-                        <div className="dd-muted">Planner, evidence log, deductions, communication history, and draft letter.</div>
-                        <div className="dd-upgrade-cta" style={{ color: "#475569" }}>Current free mode</div>
-                      </div>
-
-                      <div className={`dd-upgrade-card dd-upgrade-card--pro ${plan === "pro" ? "dd-plan-active" : ""}`} onClick={() => handlePlanClick("pro") }>
-                        <div className="dd-upgrade-pill">Most popular</div>
-                        <div className="dd-section-title" style={{ marginBottom: 6, color: "#1d4ed8" }}>Pro · $9</div>
-                        <div className="dd-card-title" style={{ fontSize: 28 }}>Send-ready output</div>
-                        <div className="dd-muted" style={{ color: "#1e3a8a", fontWeight: 600 }}>Polished PDF export, cleaner demand letter formatting, and stronger dispute templates.</div>
-                        <div className="dd-upgrade-cta">Unlock Pro</div>
-                      </div>
-
-                      <div className={`dd-upgrade-card ${plan === "bundle" ? "dd-plan-active" : ""}`} onClick={() => handlePlanClick("bundle") }>
-                        <div className="dd-section-title" style={{ marginBottom: 6 }}>Bundle · $19</div>
-                        <div className="dd-card-title" style={{ fontSize: 24 }}>Full renter toolkit</div>
-                        <div className="dd-muted">Move-out pack, roommate split tools, budget planner, and printable case pack.</div>
-                        <div className="dd-upgrade-cta">Get bundle</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="dd-panel">
-              <div className="dd-section-title">Case details</div>
-              <div className="dd-tabs">
-                {tabs.map(([key, name]) => (
-                  <button key={key} className={tab === key ? "dd-tab-active" : "dd-tab-idle"} onClick={() => setTab(key)}>
-                    {name}
-                  </button>
                 ))}
-              </div>
 
-              {tab === "evidence" && (
-                <div>
-                  {data.evidence.map((item) => (
-                    <div key={item.id} className="dd-row-card">
-                      <input className="dd-input" type="date" value={item.date} onChange={(e) => updateListItem("evidence", item.id, "date", e.target.value)} />
-                      <input className="dd-input" placeholder="Room / area" value={item.room} onChange={(e) => updateListItem("evidence", item.id, "room", e.target.value)} />
-                      <input className="dd-input" placeholder="Photo/video file name" value={item.fileRef} onChange={(e) => updateListItem("evidence", item.id, "fileRef", e.target.value)} />
-                      <div style={{ display: "flex", gap: 8 }}>
-                        <input className="dd-input" placeholder="Short note" value={item.note} onChange={(e) => updateListItem("evidence", item.id, "note", e.target.value)} />
-                        <button className="dd-btn" onClick={() => removeListItem("evidence", item.id)}>Delete</button>
-                      </div>
-                    </div>
-                  ))}
-                  <button className="dd-btn-primary" onClick={() => addListItem("evidence", { date: "", room: "Bedroom", fileRef: "", note: "" })}>Add evidence item</button>
+                <div className="wide-center">
+                  <button className="btn primary" onClick={addEvidenceRow}>Add evidence item</button>
                 </div>
-              )}
+              </div>
+            )}
 
-              {tab === "deductions" && (
-                <div>
-                  {data.issues.map((item) => (
-                    <div key={item.id} className="dd-row-card">
-                      <input className="dd-input" placeholder="Area" value={item.area} onChange={(e) => updateListItem("issues", item.id, "area", e.target.value)} />
-                      <input className="dd-input" type="number" placeholder="Claimed amount" value={item.amount} onChange={(e) => updateListItem("issues", item.id, "amount", e.target.value)} />
-                      <select className="dd-select" value={item.status} onChange={(e) => updateListItem("issues", item.id, "status", e.target.value)}>
-                        <option>Review</option>
-                        <option>Accepted</option>
+            {activeTab === "deductions" && (
+              <div className="tab-panel">
+                {deductions.map((row, index) => (
+                  <div className="entry-card" key={`deduction-${index}`}>
+                    <div className="entry-grid triple">
+                      <input className="input" value={row.item} onChange={(e) => updateDeductions(index, "item", e.target.value)} placeholder="Deduction item" />
+                      <input className="input" value={row.amount} onChange={(e) => updateDeductions(index, "amount", e.target.value.replace(/[^\d]/g, ""))} placeholder="Amount" />
+                      <select className="select" value={row.status} onChange={(e) => updateDeductions(index, "status", e.target.value)}>
                         <option>Disputed</option>
-                        <option>Resolved</option>
+                        <option>Needs review</option>
+                        <option>Accepted</option>
                       </select>
-                      <div style={{ display: "flex", gap: 8 }}>
-                        <input className="dd-input" placeholder="Note" value={item.note} onChange={(e) => updateListItem("issues", item.id, "note", e.target.value)} />
-                        <button className="dd-btn" onClick={() => removeListItem("issues", item.id)}>Delete</button>
-                      </div>
+                      <button className="small-btn secondary" onClick={() => deleteDeductionRow(index)}>Delete</button>
                     </div>
-                  ))}
-                  <button className="dd-btn-primary" onClick={() => addListItem("issues", { area: "Bathroom", amount: "", status: "Review", note: "" })}>Add deduction item</button>
-                </div>
-              )}
-
-              {tab === "comms" && (
-                <div>
-                  {data.communications.map((item) => (
-                    <div key={item.id} className="dd-row-card">
-                      <input className="dd-input" type="date" value={item.date} onChange={(e) => updateListItem("communications", item.id, "date", e.target.value)} />
-                      <select className="dd-select" value={item.channel} onChange={(e) => updateListItem("communications", item.id, "channel", e.target.value)}>
-                        <option>Email</option>
-                        <option>Phone</option>
-                        <option>Text</option>
-                        <option>In person</option>
-                      </select>
-                      <input className="dd-input" placeholder="Subject" value={item.subject} onChange={(e) => updateListItem("communications", item.id, "subject", e.target.value)} />
-                      <div style={{ display: "flex", gap: 8 }}>
-                        <input className="dd-input" placeholder="Summary" value={item.summary} onChange={(e) => updateListItem("communications", item.id, "summary", e.target.value)} />
-                        <button className="dd-btn" onClick={() => removeListItem("communications", item.id)}>Delete</button>
-                      </div>
-                    </div>
-                  ))}
-                  <button className="dd-btn-primary" onClick={() => addListItem("communications", { date: "", channel: "Email", subject: "Follow-up", summary: "" })}>Add communication</button>
-                </div>
-              )}
-
-              {tab === "letter" && (
-                <div>
-                  <textarea className="dd-letter" value={demandLetter} readOnly />
-                  <div className="dd-toolbar">
-                    <button className="dd-btn-accent" onClick={copyDemandLetter}>Copy demand letter</button>
-                    <button className="dd-btn" onClick={() => window.print()}>Print draft</button>
                   </div>
-                  {copyMessage ? <div className="dd-copy-note">{copyMessage}</div> : null}
+                ))}
+
+                <div className="wide-center">
+                  <button className="btn primary" onClick={addDeductionRow}>Add deduction item</button>
                 </div>
-              )}
-            </div>
-
-            <div className="dd-split-grid">
-              <div className="dd-panel">
-                <div className="dd-section-title">State guidance</div>
-                <ul className="dd-signal-list">
-                  {stateGuidance.map((item, index) => (
-                    <li key={index}>{item}</li>
-                  ))}
-                </ul>
               </div>
+            )}
 
-              <div className="dd-panel">
-                <div className="dd-section-title">Case snapshot</div>
-                <ul className="dd-signal-list">
-                  {summaryHighlights.map((item, index) => (
-                    <li key={index}>{item}</li>
-                  ))}
-                </ul>
+            {activeTab === "comms" && (
+              <div className="tab-panel">
+                {comms.map((row, index) => (
+                  <div className="entry-card" key={`comm-${index}`}>
+                    <div className="entry-grid triple">
+                      <input className="input" value={row.date} onChange={(e) => updateComms(index, "date", e.target.value.replace(/[^\d-]/g, "").slice(0, 10))} placeholder="YYYY-MM-DD" />
+                      <input className="input" value={row.channel} onChange={(e) => updateComms(index, "channel", e.target.value)} placeholder="Email / Text / Phone" />
+                      <input className="input" value={row.summary} onChange={(e) => updateComms(index, "summary", e.target.value)} placeholder="What was said?" />
+                      <button className="small-btn secondary" onClick={() => deleteCommsRow(index)}>Delete</button>
+                    </div>
+                  </div>
+                ))}
+
+                <div className="wide-center">
+                  <button className="btn primary" onClick={addCommsRow}>Add communication</button>
+                </div>
               </div>
-            </div>
+            )}
 
-            <div className="dd-panel">
-              <div className="dd-section-title">Dispute readiness checklist</div>
-              <ul className="dd-signal-list">
-                {checklistItems.map((item, index) => (
-                  <li key={index}>{item}</li>
+            {activeTab === "demand" && (
+              <div className="tab-panel">
+                <div className="entry-card">
+                  <textarea className="textarea" value={demandLetterText} onChange={() => {}} readOnly style={{ minHeight: 340 }} />
+                  <div className="file-row">
+                    <button className="small-btn primary" onClick={openDemandLetter}>Open in new window</button>
+                    <button className="small-btn secondary" onClick={() => downloadFile("demand-letter.txt", demandLetterText)}>Download .txt</button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </section>
+
+          <div className="bottom-grid">
+            <section className="info-card">
+              <h2 className="section-title">State guidance</h2>
+              <ul>
+                <li>State entered: <strong>{form.state || "Missing"}</strong>. Treat this as a reminder layer, not legal advice.</li>
+                <li>Check your state's usual deposit-return timeline and itemized deduction rules.</li>
+                <li>Confirm whether written notice, mailing address, or certified delivery matters where you are.</li>
+              </ul>
+            </section>
+
+            <section className="info-card">
+              <h2 className="section-title">Case snapshot</h2>
+              <div className="snapshot-table">
+                <div>Deposit: <strong>{formatCurrency(depositNumber)}</strong></div>
+                <div>Claimed: <strong>{formatCurrency(claimedTotal)}</strong></div>
+                <div>Estimated return: <strong>{formatCurrency(estimatedReturn)}</strong></div>
+                <div>Evidence score: <strong>{evidenceScore} ({evidenceStrength})</strong></div>
+              </div>
+            </section>
+
+            <section className="info-card large">
+              <h2 className="section-title">Dispute readiness checklist</h2>
+              <ul>
+                {readinessChecklist.map((item, index) => (
+                  <li key={`${item.label}-${index}`}>{item.done ? "✓" : "•"} {item.label}</li>
                 ))}
               </ul>
-            </div>
-
-            <div className="dd-panel">
-              <div className="dd-section-title">Bundle-only toolkit</div>
-              {isPlanAtLeast("bundle") ? (
-                <ul className="dd-signal-list">
-                  {bundleTools.map((item, index) => (
-                    <li key={index}>{item}</li>
-                  ))}
-                </ul>
-              ) : (
-                <div className="dd-box dd-status-neutral">
-                  <strong>Locked on Free / Pro</strong>
-                  <div className="dd-muted" style={{ color: "inherit", marginTop: 8 }}>
-                    Switch to Bundle mode to unlock extra printable tools and worksheets.
-                  </div>
-                </div>
-              )}
-            </div>
+            </section>
           </div>
+
+          <section className="info-card bundle-toolkit">
+            <h2 className="section-title">Bundle-only toolkit</h2>
+            {isBundle ? (
+              <div className="bundle-box">
+                <strong>Bundle unlocked.</strong><br />
+                Move-out pack, roommate split sheet, budget planner, and printable case pack are available in this mode.
+              </div>
+            ) : (
+              <div className="bundle-box locked">
+                <strong>Locked on {isPro ? "Pro" : "Free"}.</strong><br />
+                Switch to <strong>Bundle mode</strong> to unlock extra printable tools and worksheets.
+              </div>
+            )}
+          </section>
         </div>
       </div>
     </>
